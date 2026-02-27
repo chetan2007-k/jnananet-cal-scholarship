@@ -1,0 +1,28 @@
+{
+  "name": "jnananet-cal-scholarship",
+  "version": "1.0.0",
+  "description": "JnanaNet is a working prototype of a Cognitive Access Layer (CAL) designed to simplify scholarship application workflows for students with low digital literacy.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chetan2007-k/jnananet-cal-scholarship.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chetan2007-k/jnananet-cal-scholarship/issues"
+  },
+  "homepage": "https://github.com/chetan2007-k/jnananet-cal-scholarship#readme",
+  "dependencies": {
+    "axios": "^1.13.5",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "multer": "^2.0.2",
+    "pdf-parse": "^2.4.5"
+  }
+}
