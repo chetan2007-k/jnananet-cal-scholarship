@@ -16,7 +16,9 @@ JnanaNet is a hackathon-ready, AI-powered scholarship assistance platform built 
 
 ## Core Features
 - Multilingual scholarship assistant (English, Hindi, Tamil, Telugu)
-- Literacy-aware AI response style (Low / Medium / High)
+- Structured AI-style reasoning response format (understanding → matching → why → next step)
+- Dynamic scholarship matching from profile inputs (`percentage`, `income`, `course`)
+- AI thinking effect with small backend delay for realistic interaction
 - Eligibility checker with score and recommendation hints
 - Scholarship recommendation engine with match score + reasoning
 - Scholarship portals directory (Govt, private, NGO, international)
@@ -40,9 +42,10 @@ JnanaNet is a hackathon-ready, AI-powered scholarship assistance platform built 
 	- `backend/data/scholarships.js`
 - CORS configured for S3 frontend domain (with env override)
 
-### 3) AI Layer (Amazon Bedrock)
-- `/api/guidance` builds literacy-aware prompts and invokes Bedrock model
-- Model driven by `MODEL_ID` and `AWS_REGION`
+### 3) AI Reasoning Layer (Current + Cloud Path)
+- **Current implementation**: `/api/guidance` uses smart rule-based reasoning and dynamic matching
+- **Response style**: hackathon-friendly structured analysis with recommendation rationale
+- **Cloud path**: Bedrock service module is preserved for future managed-model integration
 
 ### 4) Storage Layer (Amazon S3)
 - `/api/upload` accepts file uploads and pushes to S3 when `S3_BUCKET` is configured
@@ -70,10 +73,21 @@ Body:
 ```json
 {
 	"question": "Scholarships for B.Tech students",
+	"percentage": 72,
+	"income": 350000,
+	"course": "B.Tech",
 	"language": "English",
 	"literacy": "Medium"
 }
 ```
+
+Behavior:
+- Returns an "AI Analysis of Your Query" response with:
+  1) request understanding
+  2) matched scholarships
+  3) why they match
+  4) next step
+- Adds ~1.2s delay to simulate AI thinking (`Analyzing...` feel)
 
 ### `POST /api/recommendations`
 Body:
@@ -112,11 +126,15 @@ npm install
 Create `backend/.env` from `backend/.env.example`:
 ```env
 PORT=5000
-AWS_REGION=ap-south-1
-MODEL_ID=amazon.titan-text-lite-v1
+AWS_REGION=us-east-1
+MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
 # CORS_ORIGIN=http://localhost:5173,http://jnananet-frontend-chetan.s3-website.eu-north-1.amazonaws.com
 # S3_BUCKET=your-s3-bucket-name
 ```
+
+Note:
+- Current `/api/guidance` works without external model calls.
+- `MODEL_ID`/`AWS_REGION` are kept for Bedrock-ready deployment path.
 
 ### 3) Run backend
 ```bash
