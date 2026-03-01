@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="JnanaNet App Icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <radialGradient id="orb" cx="50%" cy="45%" r="58%">
+      <stop offset="0%" stop-color="#cffafe"/>
+      <stop offset="42%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </radialGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="13" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="16" y="16" width="480" height="480" rx="120" fill="url(#bg)"/>
+
+  <circle cx="256" cy="256" r="150" fill="url(#orb)" opacity="0.95" filter="url(#glow)"/>
+  <circle cx="256" cy="256" r="122" fill="none" stroke="#bfdbfe" stroke-opacity="0.25" stroke-width="7"/>
+
+  <path d="M170 252c25-31 55-48 86-48s61 17 86 48" stroke="#f0f9ff" stroke-width="8" fill="none" opacity="0.95"/>
+  <path d="M202 292h108M228 220h56M200 250l36 28M312 250l-36 28" stroke="#dbeafe" stroke-width="6" stroke-linecap="round" opacity="0.86"/>
+  <circle cx="228" cy="220" r="7" fill="#e0f2fe"/>
+  <circle cx="312" cy="250" r="7" fill="#e0f2fe"/>
+  <circle cx="236" cy="278" r="7" fill="#e0f2fe"/>
+
+  <path d="M256 122l108 42-108 42-108-42 108-42z" fill="#f8fafc"/>
+  <path d="M256 172l83-33v33c0 31-35 56-83 56s-83-25-83-56v-33l83 33z" fill="#93c5fd" opacity="0.95"/>
+  <path d="M364 164v58" stroke="#93c5fd" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="364" cy="231" r="12" fill="#93c5fd"/>
+
+  <g opacity="0.55">
+    <circle cx="120" cy="116" r="4" fill="#93c5fd"/>
+    <circle cx="390" cy="120" r="4" fill="#93c5fd"/>
+    <circle cx="112" cy="380" r="4" fill="#93c5fd"/>
+    <circle cx="392" cy="392" r="4" fill="#93c5fd"/>
+    <path d="M124 116h60M328 120h58M116 380h62M332 392h56" stroke="#60a5fa" stroke-width="3"/>
+  </g>
+</svg>

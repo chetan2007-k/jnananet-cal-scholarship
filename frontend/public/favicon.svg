@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="JnanaNet Icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <radialGradient id="orb" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#a5f3fc"/>
+      <stop offset="45%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3.2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bg)"/>
+
+  <circle cx="64" cy="64" r="36" fill="url(#orb)" opacity="0.95" filter="url(#glow)"/>
+  <circle cx="64" cy="64" r="29" fill="none" stroke="#bfdbfe" stroke-opacity="0.28" stroke-width="1.5"/>
+
+  <path d="M44 63c6-8 14-12 24-12s18 4 24 12" stroke="#e0f2fe" stroke-width="2" fill="none" opacity="0.9"/>
+  <path d="M52 73h24M58 57h12M52 64l8 6M76 64l-8 6" stroke="#dbeafe" stroke-width="1.7" stroke-linecap="round" opacity="0.8"/>
+  <circle cx="58" cy="57" r="1.8" fill="#e0f2fe"/>
+  <circle cx="76" cy="64" r="1.8" fill="#e0f2fe"/>
+  <circle cx="60" cy="70" r="1.8" fill="#e0f2fe"/>
+
+  <path d="M64 33l26 10-26 10-26-10 26-10z" fill="#dbeafe"/>
+  <path d="M64 45l20-8v8c0 8-8 14-20 14s-20-6-20-14v-8l20 8z" fill="#93c5fd" opacity="0.95"/>
+  <path d="M90 43v14" stroke="#93c5fd" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="90" cy="58" r="3" fill="#93c5fd"/>
+</svg>
