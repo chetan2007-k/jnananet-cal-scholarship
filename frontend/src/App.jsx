@@ -821,6 +821,33 @@ function App() {
   const [selectedScholarshipId, setSelectedScholarshipId] = useState(null);
   const [eligibilityCheckResult, setEligibilityCheckResult] = useState(null);
   const [isEligibilityChecking, setIsEligibilityChecking] = useState(false);
+  const [savedScholarships, setSavedScholarships] = useState(() => readStorageArray("jnananet_saved_scholarships"));
+  const [supportTickets, setSupportTickets] = useState(() => readStorageArray("jnananet_support_tickets"));
+  const [ticketForm, setTicketForm] = useState({
+    subject: "",
+    description: "",
+    screenshotName: "",
+  });
+  const [ticketStatus, setTicketStatus] = useState("");
+  const [authUser, setAuthUser] = useState(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const value = window.localStorage.getItem("jnananet_auth_user");
+      return value ? JSON.parse(value) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [authMode, setAuthMode] = useState("login");
+  const [authForm, setAuthForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    course: "B.Tech",
+    percentage: "",
+    familyIncome: "",
+  });
+  const [authMessage, setAuthMessage] = useState("");
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
@@ -848,6 +875,39 @@ function App() {
       window.localStorage.setItem("jnananet_application_history", JSON.stringify(applicationHistory));
     }
   }, [applicationHistory]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("jnananet_saved_scholarships", JSON.stringify(savedScholarships));
+    }
+  }, [savedScholarships]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("jnananet_support_tickets", JSON.stringify(supportTickets));
+    }
+  }, [supportTickets]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (authUser) {
+        window.localStorage.setItem("jnananet_auth_user", JSON.stringify(authUser));
+      } else {
+        window.localStorage.removeItem("jnananet_auth_user");
+      }
+    }
+  }, [authUser]);
+
+  useEffect(() => {
+    if (!authUser) return;
+
+    setEligibilityForm((prev) => ({
+      ...prev,
+      course: authUser.course || prev.course,
+      percentage: prev.percentage || String(authUser.percentage || ""),
+      income: prev.income || String(authUser.familyIncome || ""),
+    }));
+  }, [authUser]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1070,6 +1130,162 @@ function App() {
 
   const clearSearchHistory = () => {
     setSearchHistory([]);
+  };
+
+  const getScholarshipSource = () => (scholarshipCatalog.length > 0 ? scholarshipCatalog : fallbackScholarships);
+
+  const isSavedScholarship = (scholarshipId) => savedScholarships.includes(scholarshipId);
+
+  const toggleSaveScholarship = (scholarshipId) => {
+    setSavedScholarships((prev) => (
+      prev.includes(scholarshipId)
+        ? prev.filter((id) => id !== scholarshipId)
+        : [scholarshipId, ...prev]
+    ));
+  };
+
+  const handleTicketInput = (field, value) => {
+    setTicketForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const submitSupportTicket = (event) => {
+    event.preventDefault();
+    const subject = ticketForm.subject.trim();
+    const description = ticketForm.description.trim();
+
+    if (!subject || !description) {
+      setTicketStatus("Please fill subject and description.");
+      return;
+    }
+
+    const ticket = {
+      id: `TKT-${Date.now().toString().slice(-8)}`,
+      subject,
+      description,
+      screenshotName: ticketForm.screenshotName || "Not attached",
+      status: "Open",
+      createdAt: new Date().toLocaleString(),
+      raisedBy: authUser?.email || "Guest",
+    };
+
+    setSupportTickets((prev) => [ticket, ...prev].slice(0, 100));
+    setTicketForm({ subject: "", description: "", screenshotName: "" });
+    setTicketStatus("✅ Ticket submitted successfully.");
+  };
+
+  const handleAuthInput = (field, value) => {
+    setAuthForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAuthSubmit = (event) => {
+    event.preventDefault();
+    const email = authForm.email.trim().toLowerCase();
+    const password = authForm.password;
+
+    const accounts = (() => {
+      if (typeof window === "undefined") return [];
+      try {
+        const value = window.localStorage.getItem("jnananet_accounts");
+        const parsed = value ? JSON.parse(value) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    })();
+
+    if (authMode === "signup") {
+      if (!authForm.name.trim() || !email || !password) {
+        setAuthMessage("Please fill name, email, and password.");
+        return;
+      }
+
+      if (accounts.some((item) => String(item.email).toLowerCase() === email)) {
+        setAuthMessage("Account already exists with this email.");
+        return;
+      }
+
+      const account = {
+        name: authForm.name.trim(),
+        email,
+        password,
+        course: authForm.course,
+        percentage: Number.parseFloat(authForm.percentage || "0") || 0,
+        familyIncome: Number.parseFloat(authForm.familyIncome || "0") || 0,
+      };
+
+      const nextAccounts = [account, ...accounts];
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("jnananet_accounts", JSON.stringify(nextAccounts));
+      }
+
+      setAuthUser(account);
+      setAuthMessage("✅ Account created and logged in.");
+      setActivePage("dashboard");
+      return;
+    }
+
+    if (authMode === "forgot") {
+      if (!email) {
+        setAuthMessage("Enter your email to continue.");
+        return;
+      }
+
+      setAuthMessage("If this email is registered, reset instructions have been sent.");
+      return;
+    }
+
+    const matched = accounts.find(
+      (item) => String(item.email).toLowerCase() === email && String(item.password) === password
+    );
+
+    if (!matched) {
+      setAuthMessage("Invalid email or password.");
+      return;
+    }
+
+    setAuthUser(matched);
+    setAuthMessage("✅ Logged in successfully.");
+    setActivePage("dashboard");
+  };
+
+  const handleLogout = () => {
+    setAuthUser(null);
+    setActivePage("home");
+  };
+
+  const getNotificationItems = () => {
+    const sourceScholarships = getScholarshipSource();
+    const items = [];
+
+    sourceScholarships.forEach((scholarship) => {
+      const daysLeft = getDaysLeft(scholarship.deadline);
+      if (daysLeft !== null && daysLeft <= 7) {
+        items.push({
+          id: `deadline-${scholarship.id}`,
+          text: `Reminder: ${scholarship.name} deadline in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`,
+          type: "deadline",
+        });
+      }
+    });
+
+    if (sourceScholarships.length > 0) {
+      items.push({
+        id: "new-scholarships",
+        text: `New scholarships available: ${sourceScholarships.length}`,
+        type: "new",
+      });
+    }
+
+    const missingDocs = ["aadhaar", "income", "marksheet"].filter((key) => !uploads[key]);
+    if (missingDocs.length > 0) {
+      items.push({
+        id: "doc-reminder",
+        text: `Document reminder: upload ${missingDocs.join(", ")} to complete your application profile.`,
+        type: "document",
+      });
+    }
+
+    return items;
   };
 
   const openScholarshipDetails = (scholarshipId) => {
@@ -1318,6 +1534,9 @@ function App() {
                     </button>
                     <button className="explain-mini" onClick={() => openScholarshipDetails(scholarship.id)}>
                       View Details
+                    </button>
+                    <button className="explain-mini" onClick={() => toggleSaveScholarship(scholarship.id)}>
+                      {isSavedScholarship(scholarship.id) ? "★ Saved" : "☆ Save"}
                     </button>
                   </div>
                 </div>
@@ -1750,6 +1969,11 @@ function App() {
           </button>
           <button className="btn-glass speak-btn" onClick={startVoiceInput} type="button">🎤 Speak</button>
         </div>
+        <div className="assistant-support-row">
+          <button className="btn-glass" onClick={() => setActivePage("support")}>
+            Can't solve with AI? Raise Support Ticket
+          </button>
+        </div>
       </div>
     </section>
   );
@@ -2024,6 +2248,222 @@ function App() {
     );
   };
 
+  const renderNotifications = () => {
+    const notifications = getNotificationItems();
+
+    return (
+      <section className="moon-section">
+        <div className="glass stories-shell">
+          <h2>Notifications</h2>
+          <p>Stay updated on deadlines, new scholarships, and document reminders.</p>
+
+          <div className="notification-list">
+            {notifications.length === 0 && <p>No new notifications.</p>}
+            {notifications.map((item) => (
+              <div className={`notification-card ${item.type}`} key={item.id}>
+                {item.text}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  const renderSavedScholarships = () => {
+    const sourceScholarships = getScholarshipSource();
+    const savedItems = sourceScholarships.filter((item) => savedScholarships.includes(item.id));
+
+    return (
+      <section className="moon-section">
+        <div className="glass stories-shell">
+          <h2>⭐ Saved Scholarships</h2>
+          <p>Quick access to scholarships you bookmarked.</p>
+
+          <div className="saved-list">
+            {savedItems.length === 0 && <p>No saved scholarships yet.</p>}
+            {savedItems.map((item) => (
+              <article className="saved-card" key={item.id}>
+                <p>✔ {item.name}</p>
+                <div className="saved-actions">
+                  <button className="btn-glass" onClick={() => openScholarshipDetails(item.id)}>View Details</button>
+                  <button className="btn-glass" onClick={() => toggleSaveScholarship(item.id)}>Remove</button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  const renderSupport = () => (
+    <section className="moon-section">
+      <div className="glass stories-shell support-shell">
+        <h2>Raise Support Ticket</h2>
+        <p>If AI cannot solve your issue, submit a ticket and our team will assist you.</p>
+
+        <form className="support-form" onSubmit={submitSupportTicket}>
+          <label>
+            Subject
+            <input
+              type="text"
+              value={ticketForm.subject}
+              onChange={(event) => handleTicketInput("subject", event.target.value)}
+              placeholder="Unable to upload income certificate"
+            />
+          </label>
+          <label>
+            Description
+            <textarea
+              rows="5"
+              value={ticketForm.description}
+              onChange={(event) => handleTicketInput("description", event.target.value)}
+              placeholder="Portal shows error while uploading document"
+            />
+          </label>
+          <label>
+            Upload Screenshot
+            <input
+              type="file"
+              onChange={(event) => handleTicketInput("screenshotName", event.target.files?.[0]?.name || "")}
+            />
+          </label>
+          <button className="btn-neon" type="submit">Submit Ticket</button>
+          {ticketStatus && <p className="contact-status ok">{ticketStatus}</p>}
+        </form>
+      </div>
+    </section>
+  );
+
+  const renderAdminTickets = () => (
+    <section className="moon-section">
+      <div className="glass stories-shell">
+        <h2>Admin Ticket Panel</h2>
+        <p>View all support tickets raised by users.</p>
+
+        <div className="ticket-list">
+          {supportTickets.length === 0 && <p>No tickets raised yet.</p>}
+          {supportTickets.map((ticket) => (
+            <article className="ticket-card" key={ticket.id}>
+              <h4>{ticket.subject}</h4>
+              <p>{ticket.description}</p>
+              <small>{ticket.id} • {ticket.createdAt} • {ticket.raisedBy}</small>
+              <p>Screenshot: {ticket.screenshotName}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+
+  const renderAuth = () => (
+    <section className="moon-section">
+      <div className="glass stories-shell auth-shell">
+        <h2>{authMode === "signup" ? "Create Account" : authMode === "forgot" ? "Forgot Password" : "Student Login"}</h2>
+        <p>Login to get personalized scholarship recommendations and dashboard insights.</p>
+
+        <form className="support-form" onSubmit={handleAuthSubmit}>
+          {authMode === "signup" && (
+            <label>
+              Name
+              <input type="text" value={authForm.name} onChange={(event) => handleAuthInput("name", event.target.value)} />
+            </label>
+          )}
+
+          <label>
+            Email
+            <input type="email" value={authForm.email} onChange={(event) => handleAuthInput("email", event.target.value)} />
+          </label>
+
+          {authMode !== "forgot" && (
+            <label>
+              Password
+              <input type="password" value={authForm.password} onChange={(event) => handleAuthInput("password", event.target.value)} />
+            </label>
+          )}
+
+          {authMode === "signup" && (
+            <>
+              <label>
+                Course
+                <input type="text" value={authForm.course} onChange={(event) => handleAuthInput("course", event.target.value)} />
+              </label>
+              <label>
+                Percentage
+                <input type="number" value={authForm.percentage} onChange={(event) => handleAuthInput("percentage", event.target.value)} />
+              </label>
+              <label>
+                Family Income
+                <input type="number" value={authForm.familyIncome} onChange={(event) => handleAuthInput("familyIncome", event.target.value)} />
+              </label>
+            </>
+          )}
+
+          <button className="btn-neon" type="submit">
+            {authMode === "signup" ? "Create Account" : authMode === "forgot" ? "Send Reset Link" : "Login"}
+          </button>
+
+          {authMessage && <p className="contact-status ok">{authMessage}</p>}
+        </form>
+
+        <div className="auth-switches">
+          <button className="btn-glass" onClick={() => setAuthMode("login")}>Login</button>
+          <button className="btn-glass" onClick={() => setAuthMode("signup")}>Sign Up</button>
+          <button className="btn-glass" onClick={() => setAuthMode("forgot")}>Forgot Password</button>
+        </div>
+      </div>
+    </section>
+  );
+
+  const renderDashboard = () => {
+    const sourceScholarships = getScholarshipSource();
+    const recommendations = getRecommendedScholarships().slice(0, 3).map((item) => item.scholarship);
+    const savedItems = sourceScholarships.filter((item) => savedScholarships.includes(item.id));
+    const upcomingDeadlines = sourceScholarships
+      .filter((item) => getDaysLeft(item.deadline) !== null)
+      .sort((left, right) => (getDaysLeft(left.deadline) || 9999) - (getDaysLeft(right.deadline) || 9999))
+      .slice(0, 4);
+
+    return (
+      <section className="moon-section">
+        <div className="glass stories-shell dashboard-shell">
+          <h2>Welcome {authUser?.name || "Student"} 👋</h2>
+          <p>Personalized scholarship insights based on your profile.</p>
+
+          <div className="dashboard-panel-grid">
+            <article className="dashboard-panel">
+              <h3>Recommended Scholarships</h3>
+              {recommendations.map((item) => (
+                <p key={item.id}>✔ {item.name}</p>
+              ))}
+            </article>
+
+            <article className="dashboard-panel">
+              <h3>Your Eligibility Score</h3>
+              <p className="metric">{eligibilityScore || 87}%</p>
+            </article>
+
+            <article className="dashboard-panel">
+              <h3>Saved Scholarships</h3>
+              {savedItems.length === 0 && <p>No saved scholarships yet.</p>}
+              {savedItems.map((item) => (
+                <p key={item.id}>✔ {item.name}</p>
+              ))}
+            </article>
+
+            <article className="dashboard-panel">
+              <h3>Upcoming Deadlines</h3>
+              {upcomingDeadlines.map((item) => (
+                <p key={item.id}>{item.name} – {item.deadline}</p>
+              ))}
+            </article>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
   return (
     <div className={`app-shell ${themeMode} ${miracleMode ? "miracle" : ""}`}>
       <div className="starfield" />
@@ -2033,9 +2473,14 @@ function App() {
         <div className="brand">JnanaNet</div>
         <div className="nav-links">
           <button className={`nav-btn ${activePage === "home" ? "active" : ""}`} onClick={() => setActivePage("home")}>{t.nav.home}</button>
+          <button className={`nav-btn ${activePage === "dashboard" ? "active" : ""}`} onClick={() => setActivePage("dashboard")}>Dashboard</button>
           <button className={`nav-btn ${activePage === "eligibility" ? "active" : ""}`} onClick={() => setActivePage("eligibility")}>{t.nav.eligibility}</button>
           <button className={`nav-btn ${activePage === "apply" ? "active" : ""}`} onClick={() => setActivePage("apply")}>{t.nav.apply}</button>
           <button className={`nav-btn ${activePage === "track" ? "active" : ""}`} onClick={() => setActivePage("track")}>{t.nav.track || "Track & History"}</button>
+          <button className={`nav-btn ${activePage === "saved" ? "active" : ""}`} onClick={() => setActivePage("saved")}>Saved</button>
+          <button className={`nav-btn ${activePage === "notifications" ? "active" : ""}`} onClick={() => setActivePage("notifications")}>Notifications</button>
+          <button className={`nav-btn ${activePage === "support" ? "active" : ""}`} onClick={() => setActivePage("support")}>Support</button>
+          <button className={`nav-btn ${activePage === "admin" ? "active" : ""}`} onClick={() => setActivePage("admin")}>Admin</button>
           <button className={`nav-btn ${activePage === "aiassistant" ? "active" : ""}`} onClick={() => setActivePage("aiassistant")}>{t.nav.assistant}</button>
           <button className={`nav-btn ${activePage === "stories" ? "active" : ""}`} onClick={() => setActivePage("stories")}>{t.nav.stories}</button>
           <button className={`nav-btn ${activePage === "portals" ? "active" : ""}`} onClick={() => setActivePage("portals")}>{t.nav.portals || "Portals"}</button>
@@ -2055,6 +2500,11 @@ function App() {
           >
             {themeMode === "dark" ? t.nav.lightMode : t.nav.darkMode}
           </button>
+          {authUser ? (
+            <button className="btn-glass" onClick={handleLogout}>Logout</button>
+          ) : (
+            <button className="btn-glass" onClick={() => setActivePage("auth")}>Login / Signup</button>
+          )}
           <label className="miracle-toggle">
             {t.nav.miracleMode}
             <input
@@ -2067,14 +2517,20 @@ function App() {
       </nav>
 
       {activePage === "home" && renderHome()}
+      {activePage === "dashboard" && renderDashboard()}
       {activePage === "eligibility" && renderEligibility()}
       {activePage === "apply" && renderApply()}
       {activePage === "track" && renderTrackHistory()}
+      {activePage === "saved" && renderSavedScholarships()}
+      {activePage === "notifications" && renderNotifications()}
+      {activePage === "support" && renderSupport()}
+      {activePage === "admin" && renderAdminTickets()}
       {activePage === "aiassistant" && renderAiAssistant()}
       {activePage === "stories" && renderSuccessStories()}
       {activePage === "portals" && renderPortals()}
       {activePage === "faq" && renderFaq()}
       {activePage === "contact" && renderContact()}
+      {activePage === "auth" && renderAuth()}
       {activePage === "scholarshipDetails" && renderScholarshipDetails()}
 
       <button className="voice-float" onClick={() => setActivePage("aiassistant")}>{t.footer.voiceButton}</button>
