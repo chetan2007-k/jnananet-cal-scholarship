@@ -36,6 +36,57 @@ router.get("/scholarships", (req, res) => {
   });
 });
 
+router.get("/scholarships/:id", (req, res) => {
+  const scholarshipId = Number.parseInt(req.params.id, 10);
+  const scholarship = scholarships.find((item) => item.id === scholarshipId);
+
+  if (!scholarship) {
+    return res.status(404).json({ message: "Scholarship not found" });
+  }
+
+  return res.json({ scholarship });
+});
+
+router.post("/check-eligibility", (req, res) => {
+  const marks = Number.parseFloat(req.body?.marks || "0");
+  const income = Number.parseFloat(req.body?.income || "0");
+  const scholarshipId = req.body?.scholarshipId ? Number.parseInt(req.body.scholarshipId, 10) : null;
+
+  if (Number.isNaN(marks) || Number.isNaN(income)) {
+    return res.status(400).json({ message: "marks and income are required" });
+  }
+
+  const source = scholarshipId
+    ? scholarships.filter((item) => item.id === scholarshipId)
+    : scholarships;
+
+  if (scholarshipId && source.length === 0) {
+    return res.status(404).json({ message: "Scholarship not found" });
+  }
+
+  const results = source.map((scholarship) => {
+    const marksEligible = marks >= scholarship.minMarks;
+    const incomeEligible = income <= scholarship.maxIncome;
+    const status = marksEligible && incomeEligible ? "Eligible" : "Not Eligible";
+
+    return {
+      scholarshipId: scholarship.id,
+      scholarshipName: scholarship.name,
+      status,
+      reason:
+        status === "Eligible"
+          ? `You meet minimum marks (${scholarship.minMarks}%) and income criteria (≤ ₹${scholarship.maxIncome.toLocaleString("en-IN")}).`
+          : `Required: marks ≥ ${scholarship.minMarks}% and income ≤ ₹${scholarship.maxIncome.toLocaleString("en-IN")}.`,
+    };
+  });
+
+  return res.json({
+    marks,
+    income,
+    results,
+  });
+});
+
 router.post("/guidance", async (req, res) => {
   const { question, percentage = 0, income = 0, course = "B.Tech" } = req.body || {};
 

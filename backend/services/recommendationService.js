@@ -3,29 +3,29 @@ const scholarships = require("../data/scholarships");
 function getRecommendations(profile) {
   const percentage = Number.parseFloat(profile?.percentage || "0");
   const income = Number.parseFloat(profile?.income || "0");
-  const category = String(profile?.category || "General");
   const course = String(profile?.course || "");
 
   const ranked = scholarships
     .map((scholarship) => {
       const incomeEligible = income > 0 ? income <= scholarship.maxIncome : true;
-      const percentageEligible = percentage > 0 ? percentage >= scholarship.minPercentage : true;
-      const categoryEligible = scholarship.categories.includes(category);
-      const courseEligible = course ? scholarship.courseTags.includes(course) : true;
+      const percentageEligible = percentage > 0 ? percentage >= scholarship.minMarks : true;
+      const scholarshipCourse = String(scholarship.course || "").toLowerCase();
+      const normalizedCourse = course.toLowerCase();
+      const courseEligible = normalizedCourse
+        ? scholarshipCourse.includes(normalizedCourse) || normalizedCourse.includes(scholarshipCourse) || scholarshipCourse === "any"
+        : true;
 
       const matchScore =
-        (incomeEligible ? 30 : 0) +
-        (percentageEligible ? 30 : 0) +
-        (categoryEligible ? 20 : 0) +
+        (incomeEligible ? 40 : 0) +
+        (percentageEligible ? 40 : 0) +
         (courseEligible ? 20 : 0);
 
       return {
         ...scholarship,
         matchScore,
         reasoning: [
-          `${incomeEligible ? "✔" : "✖"} Income criteria`,
-          `${percentageEligible ? "✔" : "✖"} Academic criteria`,
-          `${categoryEligible ? "✔" : "✖"} Category criteria`,
+          `${incomeEligible ? "✔" : "✖"} Income within limit (₹${scholarship.maxIncome.toLocaleString("en-IN")})`,
+          `${percentageEligible ? "✔" : "✖"} Marks meet minimum (${scholarship.minMarks}%)`,
           `${courseEligible ? "✔" : "✖"} Course relevance`,
         ],
       };

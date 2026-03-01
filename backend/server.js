@@ -30,6 +30,8 @@ app.get("/", (req, res) => {
     apis: [
       "GET /api/health",
       "GET /api/scholarships",
+      "GET /api/scholarships/:id",
+      "POST /api/check-eligibility",
       "POST /api/recommendations",
       "POST /api/guidance",
       "POST /api/upload",

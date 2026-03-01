@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./index.css";
+import ScholarshipDetails from "./ScholarshipDetails";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://13.62.42.76:5000";
 
@@ -469,38 +470,58 @@ const translations = {
   },
 };
 
-const recommendedScholarships = [
+const fallbackScholarships = [
   {
+    id: 1,
     name: "NSP Merit Scholarship",
-    organization: "National Scholarship Portal",
-    funding: "Up to ₹75,000",
+    provider: "National Scholarship Portal",
+    amount: "₹50,000 per year",
+    course: "B.Tech",
+    minMarks: 60,
     maxIncome: 400000,
-    minPercentage: 60,
-    categories: ["SC", "ST", "OBC", "EWS", "General"],
+    deadline: "30 November",
+    documents: ["Aadhaar", "Income Certificate", "Marksheet", "Bank Passbook"],
+    description: "Government scholarship for meritorious students pursuing higher education.",
+    officialLink: "https://scholarships.gov.in",
   },
   {
+    id: 2,
+    name: "AICTE Pragati Scholarship",
+    provider: "AICTE",
+    amount: "₹50,000 per year",
+    course: "B.Tech",
+    minMarks: 60,
+    maxIncome: 800000,
+    deadline: "15 October",
+    documents: ["Aadhaar", "Income Certificate", "Admission Proof"],
+    description: "Scholarship for girls pursuing technical education.",
+    officialLink: "https://www.aicte-india.org",
+  },
+  {
+    id: 3,
     name: "Reliance Foundation Scholarship",
-    organization: "Reliance Foundation",
-    funding: "Up to ₹2,00,000",
+    provider: "Reliance Foundation",
+    amount: "₹2,00,000",
+    course: "Engineering",
+    minMarks: 65,
     maxIncome: 600000,
-    minPercentage: 65,
-    categories: ["SC", "ST", "OBC", "EWS", "General"],
+    deadline: "15 October",
+    documents: ["Marksheet", "Income Proof", "Essay"],
+    description: "Scholarship supporting meritorious engineering students.",
+    officialLink: "https://www.reliancefoundation.org",
   },
   {
+    id: 4,
     name: "Tata Scholarship",
-    organization: "Tata Trusts",
-    funding: "Up to ₹1,50,000",
+    provider: "Tata Trusts",
+    amount: "₹1,00,000",
+    course: "Engineering",
+    minMarks: 70,
     maxIncome: 500000,
-    minPercentage: 70,
-    categories: ["SC", "ST", "OBC", "EWS", "General"],
-  },
-  {
-    name: "Sitaram Jindal Scholarship",
-    organization: "Sitaram Jindal Foundation",
-    funding: "Up to ₹60,000",
-    maxIncome: 450000,
-    minPercentage: 55,
-    categories: ["SC", "ST", "OBC", "EWS"],
+    deadline: "20 November",
+    documents: ["Marksheet", "Income Certificate"],
+    description: "Financial support for deserving students in higher education.",
+    officialLink: "https://www.tatatrusts.org",
   },
 ];
 
@@ -795,6 +816,11 @@ function App() {
   const [searchHistory, setSearchHistory] = useState(() => readStorageArray("jnananet_search_history"));
   const [trackQueryId, setTrackQueryId] = useState("");
   const [trackResult, setTrackResult] = useState(null);
+  const [scholarshipCatalog, setScholarshipCatalog] = useState([]);
+  const [isScholarshipLoading, setIsScholarshipLoading] = useState(false);
+  const [selectedScholarshipId, setSelectedScholarshipId] = useState(null);
+  const [eligibilityCheckResult, setEligibilityCheckResult] = useState(null);
+  const [isEligibilityChecking, setIsEligibilityChecking] = useState(false);
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
@@ -822,6 +848,57 @@ function App() {
       window.localStorage.setItem("jnananet_application_history", JSON.stringify(applicationHistory));
     }
   }, [applicationHistory]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchScholarships = async () => {
+      setIsScholarshipLoading(true);
+      try {
+        const response = await fetch(`${API_BASE}/api/scholarships`);
+        if (!response.ok) {
+          throw new Error("Unable to load scholarships");
+        }
+
+        const data = await response.json();
+        if (isMounted) {
+          setScholarshipCatalog(Array.isArray(data?.scholarships) ? data.scholarships : []);
+        }
+      } catch {
+        if (isMounted) {
+          setScholarshipCatalog(fallbackScholarships);
+        }
+      } finally {
+        if (isMounted) {
+          setIsScholarshipLoading(false);
+        }
+      }
+    };
+
+    fetchScholarships();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncRouteToPage = () => {
+      if (typeof window === "undefined") return;
+      const match = window.location.pathname.match(/^\/scholarship\/(\d+)$/);
+      if (match) {
+        setSelectedScholarshipId(Number.parseInt(match[1], 10));
+        setActivePage("scholarshipDetails");
+      }
+    };
+
+    syncRouteToPage();
+    window.addEventListener("popstate", syncRouteToPage);
+
+    return () => {
+      window.removeEventListener("popstate", syncRouteToPage);
+    };
+  }, []);
 
   const updateEligibilityForm = (field, value) => {
     setEligibilityForm((prev) => ({ ...prev, [field]: value }));
@@ -995,6 +1072,57 @@ function App() {
     setSearchHistory([]);
   };
 
+  const openScholarshipDetails = (scholarshipId) => {
+    setSelectedScholarshipId(scholarshipId);
+    setEligibilityCheckResult(null);
+    setActivePage("scholarshipDetails");
+
+    if (typeof window !== "undefined") {
+      window.history.pushState({}, "", `/scholarship/${scholarshipId}`);
+    }
+  };
+
+  const closeScholarshipDetails = () => {
+    setActivePage("home");
+    setSelectedScholarshipId(null);
+    setEligibilityCheckResult(null);
+
+    if (typeof window !== "undefined") {
+      window.history.pushState({}, "", "/");
+    }
+  };
+
+  const checkScholarshipEligibility = async ({ marks, income, scholarshipId }) => {
+    setIsEligibilityChecking(true);
+    setEligibilityCheckResult(null);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/check-eligibility`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          marks,
+          income,
+          scholarshipId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Eligibility check failed");
+      }
+
+      const data = await response.json();
+      setEligibilityCheckResult(data?.results?.[0] || null);
+    } catch {
+      setEligibilityCheckResult({
+        status: "Not Eligible",
+        reason: "Unable to check eligibility right now. Please try again.",
+      });
+    } finally {
+      setIsEligibilityChecking(false);
+    }
+  };
+
   const getDaysLeft = (deadlineLabel) => {
     if (!deadlineLabel || deadlineLabel.toLowerCase() === "closed") return null;
 
@@ -1013,20 +1141,27 @@ function App() {
   const getScholarshipMatchDetails = (scholarship) => {
     const income = parseFloat(eligibilityForm.income || "0");
     const percentage = parseFloat(eligibilityForm.percentage || "0");
-    const category = eligibilityForm.category;
+    const selectedCourse = String(eligibilityForm.course || "").toLowerCase();
+    const scholarshipCourse = String(scholarship.course || "").toLowerCase();
 
-    const incomeEligible = income > 0 && income <= scholarship.maxIncome;
-    const categoryEligible = scholarship.categories.includes(category);
-    const academicStrong = percentage >= scholarship.minPercentage;
+    const incomeEligible = income > 0 ? income <= scholarship.maxIncome : true;
+    const academicStrong = percentage > 0 ? percentage >= scholarship.minMarks : true;
+    const courseEligible = selectedCourse
+      ? scholarshipCourse.includes(selectedCourse) || selectedCourse.includes(scholarshipCourse) || scholarshipCourse === "any"
+      : true;
 
     const score =
-      (incomeEligible ? 34 : 0) +
-      (categoryEligible ? 28 : 0) +
-      (academicStrong ? 38 : Math.min(38, Math.round((percentage / scholarship.minPercentage) * 38 || 0)));
+      (incomeEligible ? 35 : 0) +
+      (courseEligible ? 20 : 0) +
+      (academicStrong
+        ? 45
+        : percentage > 0
+          ? Math.min(45, Math.round((percentage / Math.max(1, scholarship.minMarks)) * 45))
+          : 0);
 
     const reasons = [
       `${incomeEligible ? "✔" : "✖"} Income ${incomeEligible ? "eligible" : "above limit"}`,
-      `${categoryEligible ? "✔" : "✖"} Category ${categoryEligible ? "eligible" : "not preferred"}`,
+      `${courseEligible ? "✔" : "✖"} Course ${courseEligible ? "matched" : "not matched"}`,
       `${academicStrong ? "✔" : "✖"} Academic score ${academicStrong ? "strong" : "below cut-off"}`,
     ];
 
@@ -1034,33 +1169,37 @@ function App() {
   };
 
   const getRecommendedScholarships = () => {
+    const sourceScholarships = scholarshipCatalog.length > 0 ? scholarshipCatalog : fallbackScholarships;
     const income = parseFloat(eligibilityForm.income || "0");
     const percentage = parseFloat(eligibilityForm.percentage || "0");
-    const category = eligibilityForm.category;
+    const course = String(eligibilityForm.course || "").toLowerCase();
 
     const hasProfileData = income > 0 || percentage > 0;
     if (!hasProfileData) {
-      return recommendedScholarships
+      return sourceScholarships
         .map((scholarship) => ({ scholarship, match: getScholarshipMatchDetails(scholarship) }))
-        .slice(0, 4);
+        .slice(0, 10);
     }
 
-    const shortlisted = recommendedScholarships
+    const shortlisted = sourceScholarships
       .filter((scholarship) => {
         const isIncomeClose = income > 0 ? income <= scholarship.maxIncome * 1.25 : true;
-        const isAcademicClose = percentage > 0 ? percentage >= scholarship.minPercentage - 10 : true;
-        const categoryMatch = scholarship.categories.includes(category);
-        return isIncomeClose && isAcademicClose && categoryMatch;
+        const isAcademicClose = percentage > 0 ? percentage >= scholarship.minMarks - 10 : true;
+        const scholarshipCourse = String(scholarship.course || "").toLowerCase();
+        const courseMatch = course
+          ? scholarshipCourse.includes(course) || course.includes(scholarshipCourse) || scholarshipCourse === "any"
+          : true;
+        return isIncomeClose && isAcademicClose && courseMatch;
       })
       .map((scholarship) => ({ scholarship, match: getScholarshipMatchDetails(scholarship) }))
       .sort((first, second) => second.match.score - first.match.score);
 
     return shortlisted.length > 0
       ? shortlisted
-      : recommendedScholarships
+      : sourceScholarships
         .map((scholarship) => ({ scholarship, match: getScholarshipMatchDetails(scholarship) }))
         .sort((first, second) => second.match.score - first.match.score)
-        .slice(0, 3);
+        .slice(0, 10);
   };
 
   const typeMessage = (text) => new Promise((resolve) => {
@@ -1164,17 +1303,21 @@ function App() {
             <h2>{t.homeCards.recommended}</h2>
             <p>Top scholarships personalized for your profile.</p>
           </div>
+          {isScholarshipLoading && <p className="loading-note">Loading scholarships...</p>}
           <div className="scholarship-grid">
             {scholarships.map(({ scholarship, match }) => (
-              <article className="glass scholarship-card" key={scholarship.name}>
+              <article className="glass scholarship-card" key={scholarship.id || scholarship.name}>
                 <h3>{scholarship.name}</h3>
-                <p>{scholarship.organization}</p>
+                <p>{scholarship.provider}</p>
                 <div className="scholarship-bottom">
-                  <span>{scholarship.funding}</span>
+                  <span>{scholarship.amount}</span>
                   <div className="scholarship-actions">
                     <button className="apply-mini" onClick={() => setActivePage("apply")}>Apply</button>
                     <button className="explain-mini" onClick={() => askAssistant(`Explain ${scholarship.name} scholarship`)}>
                       Explain with AI
+                    </button>
+                    <button className="explain-mini" onClick={() => openScholarshipDetails(scholarship.id)}>
+                      View Details
                     </button>
                   </div>
                 </div>
@@ -1866,6 +2009,21 @@ function App() {
     </section>
   );
 
+  const renderScholarshipDetails = () => {
+    const sourceScholarships = scholarshipCatalog.length > 0 ? scholarshipCatalog : fallbackScholarships;
+    const selectedScholarship = sourceScholarships.find((item) => item.id === selectedScholarshipId);
+
+    return (
+      <ScholarshipDetails
+        scholarship={selectedScholarship}
+        onBack={closeScholarshipDetails}
+        onCheckEligibility={checkScholarshipEligibility}
+        eligibilityResult={eligibilityCheckResult}
+        isChecking={isEligibilityChecking}
+      />
+    );
+  };
+
   return (
     <div className={`app-shell ${themeMode} ${miracleMode ? "miracle" : ""}`}>
       <div className="starfield" />
@@ -1917,6 +2075,7 @@ function App() {
       {activePage === "portals" && renderPortals()}
       {activePage === "faq" && renderFaq()}
       {activePage === "contact" && renderContact()}
+      {activePage === "scholarshipDetails" && renderScholarshipDetails()}
 
       <button className="voice-float" onClick={() => setActivePage("aiassistant")}>{t.footer.voiceButton}</button>
 
