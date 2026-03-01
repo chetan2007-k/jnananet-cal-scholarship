@@ -2,7 +2,6 @@ const express = require("express");
 const multer = require("multer");
 
 const scholarships = require("../data/scholarships");
-const { generateGuidance } = require("../services/bedrockService");
 const { getRecommendations } = require("../services/recommendationService");
 const { uploadDocumentToS3 } = require("../services/s3UploadService");
 
@@ -37,27 +36,55 @@ router.get("/scholarships", (req, res) => {
   });
 });
 
-router.post("/guidance", async (req, res, next) => {
-  try {
-    const { question, language = "English", literacy = "Medium" } = req.body || {};
+router.post("/guidance", async (req, res) => {
+  const { question } = req.body || {};
 
-    if (!question || !String(question).trim()) {
-      return res.status(400).json({ message: "question is required" });
-    }
-
-    console.log("[API] /guidance", { language, literacy });
-
-    const message = await generateGuidance({
-      question: String(question).trim(),
-      language,
-      literacy,
-    });
-
-    res.json({ message });
-  } catch (error) {
-    console.error("[API] /guidance error", error.message);
-    res.status(500).json({ message: "AI service error" });
+  if (!question || !String(question).trim()) {
+    return res.status(400).json({ message: "question is required" });
   }
+
+  const q = String(question).toLowerCase();
+  let answer = "";
+
+  if (q.includes("b.tech") || q.includes("btech")) {
+    answer = `
+1) Scholarships for B.Tech students:
+• NSP Merit Scholarship
+• AICTE Pragati Scholarship
+• Reliance Foundation Scholarship
+• Tata Scholarship
+
+2) Eligibility tips:
+• Maintain 60%+ marks
+• Family income under ₹4–6 lakh
+• Aadhaar and bank account required
+
+3) Documents needed:
+• Aadhaar card
+• Income certificate
+• Marksheet
+• Bank details
+
+4) Next step:
+Check eligibility using the portal and apply through official scholarship websites.
+`;
+  } else if (q.includes("documents")) {
+    answer = `
+Common scholarship documents:
+• Aadhaar Card
+• Income Certificate
+• Marksheet
+• Bonafide Certificate
+• Bank Passbook
+`;
+  } else {
+    answer = `
+I can help you with scholarships, eligibility, and documents.
+Try asking: "Scholarships for B.Tech students".
+`;
+  }
+
+  res.json({ message: answer });
 });
 
 router.post("/recommendations", (req, res) => {
