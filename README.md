@@ -1,131 +1,96 @@
-# JnanaNet – Cognitive Access Layer (CAL)
+# JnanaNet – AI Scholarship Access Layer
 
-## Project Title
-**JnanaNet – Cognitive Access Layer for Scholarship Access**
+JnanaNet is a hackathon-ready, AI-powered scholarship assistance platform built for students who struggle with language barriers, low digital literacy, and complex application workflows.
 
-## Brief Project Description
-JnanaNet is an AI-assisted scholarship guidance platform designed for students who face language barriers, low digital literacy, and complex online workflows. The product turns difficult scholarship steps into guided, understandable actions through literacy-aware explanations and a simple interface.
+## Hackathon Snapshot
+- **Theme**: AI for Social Impact / Inclusive Education
+- **Problem**: Eligible students miss scholarships due to process complexity
+- **Solution**: Literacy-aware, multilingual AI guidance + recommendation flow
+- **Cloud Stack**: Amazon EC2 + Amazon S3 + Amazon Bedrock
+- **Status**: Working full-stack prototype with deployable backend APIs
 
-## Submission Snapshot (for Judges)
-- **Category**: Inclusive GovTech / AI for Social Impact
-- **Core Innovation**: Literacy-aware AI guidance for scholarship access
-- **Primary Users**: First-generation and low-digital-literacy students
-- **Current Stage**: Functional prototype (frontend + backend API)
-- **Cloud Direction**: AWS-first architecture (EC2 + S3 + Bedrock path)
+## Live Links
+- **Frontend (S3 Website)**: http://jnananet-frontend-chetan.s3-website.eu-north-1.amazonaws.com/
+- **Backend (EC2)**: http://13.62.42.76:5000/
+- **Health Check**: http://13.62.42.76:5000/api/health
 
-## Problem Statement
-Scholarship schemes exist, but access remains unequal. Many eligible students fail to complete applications because they cannot confidently navigate eligibility rules, required documents, and form-filling steps. Existing systems often assume fluent digital behavior, stable connectivity, and formal language comprehension.
-
-## Solution Overview
-JnanaNet introduces a **Cognitive Access Layer** that sits between students and complex scholarship processes:
-- Converts user questions into scholarship-focused AI prompts.
-- Adapts explanations by literacy level (Low/Medium/High).
-- Supports multilingual interaction choices.
-- Provides a quick eligibility self-check for decision confidence.
-- Includes document upload entry for future end-to-end form intelligence.
-
-## Why This Is Innovative
-- **Human-adaptive UX** instead of one-size-fits-all portal design.
-- **Literacy-conditioned AI prompting** to control response complexity.
-- **Low-bandwidth aware interaction model** for underserved connectivity contexts.
-- **Cloud-ready architecture** that can scale from prototype to public deployment.
+## Core Features
+- Multilingual scholarship assistant (English, Hindi, Tamil, Telugu)
+- Literacy-aware AI response style (Low / Medium / High)
+- Eligibility checker with score and recommendation hints
+- Scholarship recommendation engine with match score + reasoning
+- Scholarship portals directory (Govt, private, NGO, international)
+- Application submission + tracking history UI
+- Upload endpoint prepared for Amazon S3 document storage
 
 ## Architecture
-The system follows a modular frontend + API pattern with AWS-oriented deployment.
 
-1. **Presentation Layer – React + Vite SPA**
-	- Multi-page user journey (Home, About, Eligibility, Assistant).
-	- Input controls for language, literacy level, and accessibility modes.
+### 1) Frontend Layer (React + Vite)
+- Rich single-page experience with sections: Home, Eligibility, Apply, Track, AI Assistant, Stories, Portals, FAQ, Contact
+- Uses configurable API base via `VITE_API_BASE`
+- Responsive moonlight-themed UI optimized for demo storytelling
 
-2. **Application Layer – Node.js + Express API (EC2-hosted target)**
-	- Endpoint: `POST /api/guidance`.
-	- Accepts `question`, `language`, and `literacy`, then builds tailored prompts.
+### 2) Backend Layer (Node.js + Express)
+- Modular Express codebase:
+	- `backend/server.js`
+	- `backend/routes/api.js`
+	- `backend/services/bedrockService.js`
+	- `backend/services/recommendationService.js`
+	- `backend/services/s3UploadService.js`
+	- `backend/data/scholarships.js`
+- CORS configured for S3 frontend domain (with env override)
 
-3. **AI Reasoning Layer**
-	- **Current implementation**: Hugging Face inference (`google/flan-t5-large`) via `HF_TOKEN`.
-	- **AWS production path**: Amazon Bedrock for managed reasoning and recommendation generation.
+### 3) AI Layer (Amazon Bedrock)
+- `/api/guidance` builds literacy-aware prompts and invokes Bedrock model
+- Model driven by `MODEL_ID` and `AWS_REGION`
 
-4. **Storage Layer**
-	- PDF upload entry point exists in UI.
-	- AWS production path uses Amazon S3 for document storage and retrieval.
+### 4) Storage Layer (Amazon S3)
+- `/api/upload` accepts file uploads and pushes to S3 when `S3_BUCKET` is configured
+- Graceful fallback response when S3 is not yet configured
 
-### AWS Service Mapping (Current Codebase)
-- **Amazon EC2**: Frontend currently points to a deployed backend IP (`http://13.62.42.76:5000`).
-- **Amazon S3**: Frontend build uses static-hosting compatible Vite base (`./`).
-- **Amazon Bedrock**: Defined as target AI service in architecture roadmap.
+## API Endpoints
 
-## Features
-
-### Implemented in Current Repository
-- AI guidance backend endpoint with literacy-aware prompt adaptation.
-- Language and literacy selectors in the frontend assistant workflow.
-- Eligibility checker (marks/income/Aadhaar rule-based logic).
-- Accessibility toggles (Voice Mode and Low Bandwidth mode controls).
-- PDF upload input in UI for scholarship document flow.
-- Structured, multi-section experience for guided navigation.
-
-### Partially Implemented / In Progress
-- Assistant input and upload controls are present in UI.
-- Frontend-to-backend request dispatch for the Ask action is pending wiring.
-
-## Tech Stack
-
-### Frontend
-- React 19
-- Vite 7
-- Vanilla CSS
-
-### Backend
-- Node.js
-- Express 5
-- Axios
-- CORS
-- dotenv
-- Multer (installed)
-- pdf-parse (installed)
-
-### AWS Services Used / Mapped
-- Amazon EC2 (backend hosting)
-- Amazon S3 (static hosting + document storage path)
-- Amazon Bedrock (AI reasoning target)
-
-## Project Structure
-```text
-jnananet-cal-scholarship/
-├── README.md
-├── backend/
-│   ├── package.json
-│   ├── server.js            # Express API with /api/guidance
-│   └── uploads/             # Reserved upload workspace
-└── frontend/
-    ├── package.json
-    ├── vite.config.js       # Includes base "./" for static hosting
-    ├── index.html
-    └── src/
-        ├── main.jsx         # App bootstrap
-        ├── App.jsx          # Main UX logic and page navigation
-        ├── index.css        # Core UI styling
-        └── App.css          # Vite template styles (legacy)
+### `GET /api/health`
+Returns deployment readiness metadata:
+```json
+{
+	"status": "Server running",
+	"service": "JnanaNet Backend",
+	"ai": "Amazon Bedrock",
+	"compute": "EC2",
+	"storage": "S3"
+}
 ```
 
-## How It Works
-1. Student opens JnanaNet and chooses a workflow page.
-2. Student reviews eligibility criteria and runs self-check.
-3. Student enters scholarship query with language + literacy preference.
-4. Backend endpoint prepares a literacy-specific prompt.
-5. AI model returns simplified guidance response.
-6. Student uses guidance to proceed with scholarship preparation.
+### `GET /api/scholarships`
+Returns locally curated scholarship dataset.
 
-> Current note: backend inference path is implemented; UI request wiring for Ask action is the next integration step.
+### `POST /api/guidance`
+Body:
+```json
+{
+	"question": "Scholarships for B.Tech students",
+	"language": "English",
+	"literacy": "Medium"
+}
+```
 
-## Demo Script (3–5 Minutes)
-1. Show **Home** page and explain access problem.
-2. Open **Eligibility** and run a quick pass/fail scenario.
-3. Open **Assistant** and demonstrate language + literacy options.
-4. Explain backend endpoint and current AI response generation path.
-5. Close with AWS scaling path (EC2 + S3 + Bedrock migration).
+### `POST /api/recommendations`
+Body:
+```json
+{
+	"percentage": 78,
+	"income": 300000,
+	"category": "OBC",
+	"course": "B.Tech"
+}
+```
 
-## Setup Instructions
+### `POST /api/upload`
+- Accepts multipart file fields: `document`, `file`, or `upload`
+- Uploads to S3 when configured
+
+## Local Setup
 
 ### Prerequisites
 - Node.js 18+
@@ -133,7 +98,7 @@ jnananet-cal-scholarship/
 
 ### 1) Install dependencies
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/chetan2007-k/jnananet-cal-scholarship.git
 cd jnananet-cal-scholarship
 
 cd backend
@@ -143,67 +108,66 @@ cd ../frontend
 npm install
 ```
 
-### 2) Configure environment
-Create `backend/.env`:
+### 2) Configure backend env
+Create `backend/.env` from `backend/.env.example`:
 ```env
-HF_TOKEN=your_huggingface_api_token
+PORT=5000
+AWS_REGION=ap-south-1
+MODEL_ID=amazon.titan-text-lite-v1
+# CORS_ORIGIN=http://localhost:5173,http://jnananet-frontend-chetan.s3-website.eu-north-1.amazonaws.com
+# S3_BUCKET=your-s3-bucket-name
 ```
 
 ### 3) Run backend
 ```bash
 cd backend
-node server.js
+npm start
 ```
-Backend default URL: `http://localhost:5000`
 
 ### 4) Run frontend
 ```bash
 cd frontend
 npm run dev
 ```
-Frontend default URL: `http://localhost:5173`
 
-### 5) Local integration note
-`frontend/src/App.jsx` contains a hardcoded EC2 API base URL. For full local testing, switch it to `http://localhost:5000`.
+Optional local API override:
+```bash
+# PowerShell
+$env:VITE_API_BASE="http://localhost:5000"
+npm run dev
+```
 
-## Deployment
+## Deployment Guide
 
-### Frontend on Amazon S3
-1. Build production assets:
-	```bash
-	cd frontend
-	npm run build
-	```
-2. Upload `frontend/dist/` contents to S3 static website bucket.
-3. (Optional) Add CloudFront for HTTPS and edge caching.
+### Backend on EC2
+```bash
+cd ~/jnananet-cal-scholarship
+git pull origin main
+cd backend
+npm install
+pm2 restart jnananet-backend || pm2 start server.js --name jnananet-backend --cwd ~/jnananet-cal-scholarship/backend
+curl -s http://localhost:5000/api/health
+```
 
-### Backend on Amazon EC2
-1. Provision EC2 and install Node.js.
-2. Deploy `backend/` code and configure environment variables.
-3. Start service with process manager:
-	```bash
-	pm2 start server.js --name jnananet-api
-	```
-4. Configure security groups / reverse proxy for public API access.
+### Frontend on S3
+```bash
+cd frontend
+npm run build
+aws s3 sync dist s3://jnananet-frontend-chetan --delete --region eu-north-1
+```
 
-### Bedrock Migration Path
-- Keep `/api/guidance` API contract unchanged.
-- Replace Hugging Face inference call with Amazon Bedrock runtime invocation.
-- Add response guardrails and prompt templates for scholarship policy accuracy.
+## Hackathon Demo Flow (3–5 min)
+1. Show the access problem and JnanaNet value proposition
+2. Run eligibility check with a sample student profile
+3. Ask AI assistant in a selected language/literacy mode
+4. Show recommendation ranking and reasoning cards
+5. Open live health endpoint to prove cloud backend readiness
 
-## Expected Impact
-- Reduces confusion in scholarship application journeys.
-- Improves confidence for first-time digital applicants.
-- Increases accessibility through language and literacy adaptation.
-- Creates a replicable model for other public-service workflows.
-
-## Future Enhancements
-- Complete frontend Ask-to-backend API integration.
-- Voice interaction (speech-to-text and text-to-speech).
-- Real-time translation expansion across more Indian languages.
-- SMS/WhatsApp guidance for low-connectivity users.
-- S3-based document pipeline with extraction + recommendations.
-- Bedrock-powered policy-aware recommendation engine.
+## Impact
+- Increases scholarship discoverability for underserved students
+- Reduces form confusion with adaptive AI explanation
+- Improves trust through clear recommendations and traceable flow
+- Provides a scalable cloud-native foundation for public education services
 
 ## Team
 - **Team Name**: JnanaNet
