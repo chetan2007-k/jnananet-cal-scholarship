@@ -945,7 +945,9 @@ function App() {
   useEffect(() => {
     const syncRouteToPage = () => {
       if (typeof window === "undefined") return;
-      const match = window.location.pathname.match(/^\/scholarship\/(\d+)$/);
+      const hashMatch = window.location.hash.match(/^#\/?scholarship\/(\d+)$/);
+      const pathMatch = window.location.pathname.match(/^\/scholarship\/(\d+)$/);
+      const match = hashMatch || pathMatch;
       if (match) {
         setSelectedScholarshipId(Number.parseInt(match[1], 10));
         setActivePage("scholarshipDetails");
@@ -954,9 +956,11 @@ function App() {
 
     syncRouteToPage();
     window.addEventListener("popstate", syncRouteToPage);
+    window.addEventListener("hashchange", syncRouteToPage);
 
     return () => {
       window.removeEventListener("popstate", syncRouteToPage);
+      window.removeEventListener("hashchange", syncRouteToPage);
     };
   }, []);
 
@@ -1294,7 +1298,7 @@ function App() {
     setActivePage("scholarshipDetails");
 
     if (typeof window !== "undefined") {
-      window.history.pushState({}, "", `/scholarship/${scholarshipId}`);
+      window.location.hash = `/scholarship/${scholarshipId}`;
     }
   };
 
@@ -1304,7 +1308,7 @@ function App() {
     setEligibilityCheckResult(null);
 
     if (typeof window !== "undefined") {
-      window.history.pushState({}, "", "/");
+      window.location.hash = "";
     }
   };
 
