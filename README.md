@@ -1,194 +1,141 @@
-# JnanaNet – AI Scholarship Access Layer
+# JnanaNet – AI Powered Multilingual Scholarship Discovery Platform
 
-JnanaNet is a hackathon-ready, AI-powered scholarship assistance platform built for students who struggle with language barriers, low digital literacy, and complex application workflows.
+🏆 AI for Bharat Hackathon 2026 Submission
 
-## Hackathon Snapshot
-- **Theme**: AI for Social Impact / Inclusive Education
-- **Problem**: Eligible students miss scholarships due to process complexity
-- **Solution**: Literacy-aware, multilingual AI guidance + recommendation flow
-- **Cloud Stack**: Amazon EC2 + Amazon S3 + Amazon Bedrock
-- **Status**: Working full-stack prototype with deployable backend APIs
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![React](https://img.shields.io/badge/frontend-React-blue)
+![Node.js](https://img.shields.io/badge/backend-Node.js-green)
+![AWS](https://img.shields.io/badge/cloud-AWS-orange)
 
-## Live Links
-- **Frontend (S3 Website)**: http://jnananet-frontend-chetan.s3-website.eu-north-1.amazonaws.com/
-- **Backend (EC2)**: http://13.62.42.76:5000/
-- **Health Check**: http://13.62.42.76:5000/api/health
+## Overview
+JnanaNet helps Indian students discover and apply for scholarships through a simple AI-assisted experience. The platform combines scholarship guidance, eligibility analysis, multilingual support, and application-oriented workflows so students can move from confusion to action quickly.
 
-## Core Features
-- Multilingual scholarship assistant (English, Hindi, Tamil, Telugu)
-- Structured AI-style reasoning response format (understanding → matching → why → next step)
-- Dynamic scholarship matching from profile inputs (`percentage`, `income`, `course`)
-- AI thinking effect with small backend delay for realistic interaction
-- Eligibility checker with score and recommendation hints
-- Scholarship recommendation engine with match score + reasoning
-- Scholarship portals directory (Govt, private, NGO, international)
-- Application submission + tracking history UI
-- Upload endpoint prepared for Amazon S3 document storage
+## Live Demo
+
+Frontend:  
+http://jnananet-frontend-chetan.s3-website.eu-north-1.amazonaws.com
+
+Backend API:  
+Running on AWS EC2
+
+## How It Works
+
+1. Student asks the AI assistant about scholarships.
+2. JnanaNet analyzes eligibility criteria and user profile.
+3. The system recommends suitable scholarships.
+4. Students are guided to official portals to apply.
+
+## Problem Statement
+Millions of students in India miss scholarship opportunities due to:
+- Lack of awareness about available schemes
+- Language barriers while understanding eligibility and process
+- Complex and fragmented scholarship criteria
+
+## Solution
+JnanaNet provides:
+- AI scholarship assistant
+- Eligibility checker
+- Multilingual interface
+- Scholarship portal directory
+- Application guidance
+
+## Features
+- AI Assistant for scholarship guidance
+- Scholarship eligibility checker
+- Multilingual interface (English, Hindi, Tamil, Telugu)
+- Scholarship recommendation engine
+- Document guidance
+- Application tracker
+- Scholarship portal directory
 
 ## Architecture
 
-### 1) Frontend Layer (React + Vite)
-- Rich single-page experience with sections: Home, Eligibility, Apply, Track, AI Assistant, Stories, Portals, FAQ, Contact
-- Uses configurable API base via `VITE_API_BASE`
-- Responsive moonlight-themed UI optimized for demo storytelling
+### Frontend
+- React + Vite
+- Hosted as static website
 
-### 2) Backend Layer (Node.js + Express)
-- Modular Express codebase:
-	- `backend/server.js`
-	- `backend/routes/api.js`
-	- `backend/services/bedrockService.js`
-	- `backend/services/recommendationService.js`
-	- `backend/services/s3UploadService.js`
-	- `backend/data/scholarships.js`
-- CORS configured for S3 frontend domain (with env override)
+### Backend
+- Node.js + Express API
 
-### 3) AI Reasoning Layer (Current + Cloud Path)
-- **Current implementation**: `/api/guidance` uses smart rule-based reasoning and dynamic matching
-- **Response style**: hackathon-friendly structured analysis with recommendation rationale
-- **Cloud path**: Bedrock service module is preserved for future managed-model integration
+### Cloud Infrastructure
+- Amazon S3 (frontend hosting)
+- Amazon EC2 (backend server)
 
-### 4) Storage Layer (Amazon S3)
-- `/api/upload` accepts file uploads and pushes to S3 when `S3_BUCKET` is configured
-- Graceful fallback response when S3 is not yet configured
+### AI Layer
+- AI guidance engine (currently rule-based)
+- Future integration with AWS Bedrock
 
-## API Endpoints
+## System Architecture
 
-### `GET /api/health`
-Returns deployment readiness metadata:
-```json
-{
-	"status": "Server running",
-	"service": "JnanaNet Backend",
-	"ai": "Amazon Bedrock",
-	"compute": "EC2",
-	"storage": "S3"
-}
+Frontend → React Web App  
+Backend → Node.js API  
+Cloud → AWS S3 + AWS EC2  
+AI Engine → Scholarship reasoning module
+
+_Architecture diagram will be added in `docs/`._
+
+## Project Structure
+
+```text
+jnananet-cal-scholarship/
+├── frontend/   # React application, UI, AI assistant interface
+├── backend/    # Node.js server, API routes, scholarship logic
+└── docs/       # Architecture diagrams and screenshots
 ```
 
-### `GET /api/scholarships`
-Returns locally curated scholarship dataset.
+### frontend/
+React application, UI, AI assistant interface.
 
-### `POST /api/guidance`
-Body:
-```json
-{
-	"question": "Scholarships for B.Tech students",
-	"percentage": 72,
-	"income": 350000,
-	"course": "B.Tech",
-	"language": "English",
-	"literacy": "Medium"
-}
-```
+### backend/
+Node.js server, API routes, scholarship logic.
 
-Behavior:
-- Returns an "AI Analysis of Your Query" response with:
-  1) request understanding
-  2) matched scholarships
-  3) why they match
-  4) next step
-- Adds ~1.2s delay to simulate AI thinking (`Analyzing...` feel)
+### docs/
+Architecture diagrams and screenshots.
 
-### `POST /api/recommendations`
-Body:
-```json
-{
-	"percentage": 78,
-	"income": 300000,
-	"category": "OBC",
-	"course": "B.Tech"
-}
-```
+## Setup Instructions
 
-### `POST /api/upload`
-- Accepts multipart file fields: `document`, `file`, or `upload`
-- Uploads to S3 when configured
-
-## Local Setup
-
-### Prerequisites
-- Node.js 18+
-- npm
-
-### 1) Install dependencies
+### 1) Clone Repository
 ```bash
-git clone https://github.com/chetan2007-k/jnananet-cal-scholarship.git
+git clone https://github.com/chetan2007-k/jnananet-cal-scholarship
 cd jnananet-cal-scholarship
-
-cd backend
-npm install
-
-cd ../frontend
-npm install
 ```
 
-### 2) Configure backend env
-Create `backend/.env` from `backend/.env.example`:
-```env
-PORT=5000
-AWS_REGION=us-east-1
-MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
-# CORS_ORIGIN=http://localhost:5173,http://jnananet-frontend-chetan.s3-website.eu-north-1.amazonaws.com
-# S3_BUCKET=your-s3-bucket-name
-```
-
-Note:
-- Current `/api/guidance` works without external model calls.
-- `MODEL_ID`/`AWS_REGION` are kept for Bedrock-ready deployment path.
-
-### 3) Run backend
+### 2) Install and Run Backend
 ```bash
 cd backend
-npm start
+npm install
+node server.js
 ```
 
-### 4) Run frontend
+### 3) Install and Run Frontend
 ```bash
 cd frontend
+npm install
 npm run dev
 ```
 
-Optional local API override:
-```bash
-# PowerShell
-$env:VITE_API_BASE="http://localhost:5000"
-npm run dev
-```
+## Screenshots
 
-## Deployment Guide
+### Homepage UI
+_Add screenshot here_
 
-### Backend on EC2
-```bash
-cd ~/jnananet-cal-scholarship
-git pull origin main
-cd backend
-npm install
-pm2 restart jnananet-backend || pm2 start server.js --name jnananet-backend --cwd ~/jnananet-cal-scholarship/backend
-curl -s http://localhost:5000/api/health
-```
+### AI Assistant
+_Add screenshot here_
 
-### Frontend on S3
-```bash
-cd frontend
-npm run build
-aws s3 sync dist s3://jnananet-frontend-chetan --delete --region eu-north-1
-```
+### Eligibility Checker
+_Add screenshot here_
 
-## Hackathon Demo Flow (3–5 min)
-1. Show the access problem and JnanaNet value proposition
-2. Run eligibility check with a sample student profile
-3. Ask AI assistant in a selected language/literacy mode
-4. Show recommendation ranking and reasoning cards
-5. Open live health endpoint to prove cloud backend readiness
+### Scholarship Recommendations
+_Add screenshot here_
 
-## Impact
-- Increases scholarship discoverability for underserved students
-- Reduces form confusion with adaptive AI explanation
-- Improves trust through clear recommendations and traceable flow
-- Provides a scalable cloud-native foundation for public education services
+## Future Enhancements
+- Integration with AWS Bedrock AI models
+- Voice AI assistant for rural students
+- AI-based scholarship recommendation engine
+- Mobile app version
 
-## Team
-- **Team Name**: JnanaNet
-- **Team Lead**: Paidimarri Krishna Chetan
+## Hackathon
+AI for Bharat Hackathon 2026 submission.
 
-
+## License
+This project is licensed under the MIT License.
