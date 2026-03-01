@@ -118,6 +118,7 @@ body {
   font-size: 24px;
   font-weight: 800;
   background: linear-gradient(135deg, #8ec5ff, #a78bfa, #22d3ee);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -1460,6 +1461,45 @@ select {
 
 .app-shell.light .footer-grid h4 {
   color: #0f172a;
+}
+
+.app-shell.light,
+.app-shell.light h1,
+.app-shell.light h2,
+.app-shell.light h3,
+.app-shell.light h4,
+.app-shell.light h5,
+.app-shell.light h6,
+.app-shell.light label,
+.app-shell.light span,
+.app-shell.light li,
+.app-shell.light strong {
+  color: #0f172a;
+}
+
+.app-shell.light p,
+.app-shell.light small,
+.app-shell.light blockquote,
+.app-shell.light .hero-subtitle,
+.app-shell.light .section-heading p,
+.app-shell.light .scholarship-card p,
+.app-shell.light .how-card p,
+.app-shell.light .portal-item p,
+.app-shell.light .faq-answer,
+.app-shell.light .search-item small,
+.app-shell.light .footer-grid p {
+  color: #334155;
+}
+
+.app-shell.light .hero-badge,
+.app-shell.light .scholarship-bottom span,
+.app-shell.light .match-score,
+.app-shell.light .ai-confidence,
+.app-shell.light .deadline-count,
+.app-shell.light .impact-card h3,
+.app-shell.light .score-core strong,
+.app-shell.light .story-glass blockquote {
+  color: #0f172a !important;
 }
 
 @media (max-width: 1100px) {
