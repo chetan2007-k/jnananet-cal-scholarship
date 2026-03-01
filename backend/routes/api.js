@@ -37,52 +37,99 @@ router.get("/scholarships", (req, res) => {
 });
 
 router.post("/guidance", async (req, res) => {
-  const { question } = req.body || {};
+  const { question, percentage = 0, income = 0, course = "B.Tech" } = req.body || {};
 
   if (!question || !String(question).trim()) {
     return res.status(400).json({ message: "question is required" });
   }
 
   const q = String(question).toLowerCase();
+  const normalizedCourse = String(course || "B.Tech");
+  const marks = Number.parseFloat(percentage || "0");
+  const familyIncome = Number.parseFloat(income || "0");
+
+  const dynamicMatches = [];
+  if (marks >= 60 && familyIncome > 0 && familyIncome <= 400000) {
+    dynamicMatches.push("NSP Merit Scholarship");
+  }
+  if (familyIncome > 0 && familyIncome <= 600000) {
+    dynamicMatches.push("Reliance Foundation Scholarship");
+  }
+  if (marks >= 65) {
+    dynamicMatches.push("Tata Scholarship");
+  }
+  if (q.includes("b.tech") || q.includes("btech") || normalizedCourse.toLowerCase().includes("b.tech")) {
+    dynamicMatches.push("AICTE Pragati Scholarship");
+  }
+
+  const uniqueMatches = [...new Set(dynamicMatches)];
+  const scholarshipList = uniqueMatches.length > 0
+    ? uniqueMatches
+    : ["NSP Merit Scholarship", "AICTE Pragati Scholarship", "Reliance Foundation Scholarship"];
+
+  const scholarshipLines = scholarshipList.map((name) => `• ${name}`).join("\n");
+  const marksInsight = marks > 0 ? `${marks}%` : "Not provided";
+  const incomeInsight = familyIncome > 0 ? `₹${Math.round(familyIncome).toLocaleString("en-IN")}` : "Not provided";
+
   let answer = "";
 
-  if (q.includes("b.tech") || q.includes("btech")) {
+  if (q.includes("b.tech") || q.includes("btech") || q.includes("scholarship")) {
     answer = `
-1) Scholarships for B.Tech students:
-• NSP Merit Scholarship
-• AICTE Pragati Scholarship
-• Reliance Foundation Scholarship
-• Tata Scholarship
+AI Analysis of Your Query
 
-2) Eligibility tips:
-• Maintain 60%+ marks
-• Family income under ₹4–6 lakh
-• Aadhaar and bank account required
+1) Understanding your request
+You asked about scholarships for ${normalizedCourse} students.
 
-3) Documents needed:
-• Aadhaar card
-• Income certificate
-• Marksheet
-• Bank details
+2) Matching opportunities
+Based on your profile and common eligibility criteria, these scholarships are suitable:
 
-4) Next step:
-Check eligibility using the portal and apply through official scholarship websites.
+${scholarshipLines}
+
+3) Why these match
+Most B.Tech scholarships require:
+• 60%+ academic score
+• family income below ₹4–6 lakh
+• valid Aadhaar and bank account
+
+Profile considered:
+• Academic score: ${marksInsight}
+• Family income: ${incomeInsight}
+
+4) Next step
+Use the Eligibility Checker to estimate your approval chances.
 `;
   } else if (q.includes("documents")) {
     answer = `
-Common scholarship documents:
+AI Analysis of Your Query
+
+1) Understanding your request
+You asked for scholarship document requirements.
+
+2) Common scholarship documents
 • Aadhaar Card
 • Income Certificate
 • Marksheet
 • Bonafide Certificate
 • Bank Passbook
+
+3) Next step
+Keep scanned copies ready in PDF/JPG format before applying.
 `;
   } else {
     answer = `
+AI Analysis of Your Query
+
+1) Understanding your request
 I can help you with scholarships, eligibility, and documents.
-Try asking: "Scholarships for B.Tech students".
+
+2) Try asking
+• "Scholarships for B.Tech students"
+• "What documents are needed for scholarships?"
+• "Suggest scholarships for 72% and income 3 lakh"
 `;
   }
+
+  await new Promise((resolve) => setTimeout(resolve, 1200));
 
   res.json({ message: answer });
 });
