@@ -393,16 +393,28 @@ select {
 }
 
 .scholarship-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: start;
+  gap: 10px;
 }
 
-.scholarship-bottom span {
+.scholarship-primary-stack {
+  display: grid;
+  gap: 6px;
+}
+
+.scholarship-amount {
+  margin: 0;
   color: #7dd3fc;
   font-weight: 700;
   font-size: 14px;
+}
+
+.scholarship-deadline {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 .apply-mini {
@@ -420,6 +432,10 @@ select {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.nav-more-select {
+  min-width: 140px;
 }
 
 .explain-mini {
@@ -1516,6 +1532,26 @@ select {
   margin-bottom: 4px;
 }
 
+.footer-link-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.footer-link-btn:hover,
+.footer-link-anchor:hover {
+  color: var(--text-main);
+  text-decoration: underline;
+}
+
+.footer-link-anchor {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
 .copyright {
   margin-top: 12px;
   border-top: 1px solid rgba(148, 163, 184, 0.2);
@@ -1671,6 +1707,16 @@ select {
   color: #0f172a;
 }
 
+.app-shell.light .footer-link-btn,
+.app-shell.light .footer-link-anchor {
+  color: #334155;
+}
+
+.app-shell.light .footer-link-btn:hover,
+.app-shell.light .footer-link-anchor:hover {
+  color: #0f172a;
+}
+
 .app-shell.light,
 .app-shell.light h1,
 .app-shell.light h2,
@@ -1785,6 +1831,14 @@ select {
 
   .bubble {
     max-width: 92%;
+  }
+
+  .scholarship-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .scholarship-primary-stack {
+    gap: 8px;
   }
 }
 

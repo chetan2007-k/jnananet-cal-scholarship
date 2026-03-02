@@ -818,6 +818,7 @@ function App() {
   const [faqSearch, setFaqSearch] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [selectedApplyScholarship, setSelectedApplyScholarship] = useState(null);
+  const [moreNavSelection, setMoreNavSelection] = useState("");
 
   const [eligibilityForm, setEligibilityForm] = useState({
     percentage: "",
@@ -1350,6 +1351,12 @@ function App() {
     setActivePage("auth");
   };
 
+  const handleMoreNavigation = (value) => {
+    if (!value) return;
+    setActivePage(value);
+    setMoreNavSelection("");
+  };
+
   const getNotificationItems = () => {
     const sourceScholarships = getScholarshipSource();
     const items = [];
@@ -1623,9 +1630,12 @@ function App() {
                 <h3>{scholarship.name}</h3>
                 <p>{scholarship.provider}</p>
                 <div className="scholarship-bottom">
-                  <span>{scholarship.amount}</span>
-                  <div className="scholarship-actions">
+                  <div className="scholarship-primary-stack">
+                    <p className="scholarship-amount">{scholarship.amount}</p>
+                    <p className="scholarship-deadline">Deadline: {scholarship.deadline}</p>
                     <button className="apply-mini" onClick={() => openApplyPage(scholarship)}>Apply</button>
+                  </div>
+                  <div className="scholarship-actions">
                     <button className="explain-mini" onClick={() => askAssistant(`Explain ${scholarship.name} scholarship`)}>
                       Explain with AI
                     </button>
@@ -2594,20 +2604,27 @@ function App() {
       <nav className="top-nav glass">
         <div className="brand">JnanaNet</div>
         <div className="nav-links">
-          <button className={`nav-btn ${activePage === "home" ? "active" : ""}`} onClick={() => setActivePage("home")}>{t.nav.home}</button>
-          <button className={`nav-btn ${activePage === "dashboard" ? "active" : ""}`} onClick={() => setActivePage("dashboard")}>Dashboard</button>
-          <button className={`nav-btn ${activePage === "eligibility" ? "active" : ""}`} onClick={() => setActivePage("eligibility")}>{t.nav.eligibility}</button>
-          <button className={`nav-btn ${activePage === "apply" ? "active" : ""}`} onClick={() => setActivePage("apply")}>{t.nav.apply}</button>
-          <button className={`nav-btn ${activePage === "track" ? "active" : ""}`} onClick={() => setActivePage("track")}>{t.nav.track || "Track & History"}</button>
-          <button className={`nav-btn ${activePage === "saved" ? "active" : ""}`} onClick={() => setActivePage("saved")}>Saved</button>
-          <button className={`nav-btn ${activePage === "notifications" ? "active" : ""}`} onClick={() => setActivePage("notifications")}>Notifications</button>
-          <button className={`nav-btn ${activePage === "support" ? "active" : ""}`} onClick={() => setActivePage("support")}>Support</button>
-          <button className={`nav-btn ${activePage === "admin" ? "active" : ""}`} onClick={() => setActivePage("admin")}>Admin</button>
+          <button className={`nav-btn ${activePage === "dashboard" ? "active" : ""}`} onClick={() => setActivePage("dashboard")}>{t.nav.home}</button>
+          <button className={`nav-btn ${activePage === "home" ? "active" : ""}`} onClick={() => setActivePage("home")}>Scholarships</button>
           <button className={`nav-btn ${activePage === "aiassistant" ? "active" : ""}`} onClick={() => setActivePage("aiassistant")}>{t.nav.assistant}</button>
+          <button className={`nav-btn ${activePage === "track" ? "active" : ""}`} onClick={() => setActivePage("track")}>Track Applications</button>
           <button className={`nav-btn ${activePage === "stories" ? "active" : ""}`} onClick={() => setActivePage("stories")}>{t.nav.stories}</button>
-          <button className={`nav-btn ${activePage === "portals" ? "active" : ""}`} onClick={() => setActivePage("portals")}>{t.nav.portals || "Portals"}</button>
           <button className={`nav-btn ${activePage === "faq" ? "active" : ""}`} onClick={() => setActivePage("faq")}>{t.nav.faq}</button>
-          <button className={`nav-btn ${activePage === "contact" ? "active" : ""}`} onClick={() => setActivePage("contact")}>{t.nav.contact || "Contact Us"}</button>
+          <select
+            className="nav-more-select"
+            value={moreNavSelection}
+            onChange={(event) => handleMoreNavigation(event.target.value)}
+          >
+            <option value="">More</option>
+            <option value="eligibility">Eligibility</option>
+            <option value="apply">Apply</option>
+            <option value="saved">Saved</option>
+            <option value="notifications">Notifications</option>
+            <option value="support">Support</option>
+            <option value="admin">Admin</option>
+            <option value="portals">Portals</option>
+            <option value="contact">Contact</option>
+          </select>
         </div>
         <div className="nav-actions">
           <select value={language} onChange={(e) => setLanguage(e.target.value)}>
@@ -2660,20 +2677,31 @@ function App() {
       <footer className="footer glass">
         <div className="footer-grid">
           <div>
-            <h4>JnanaNet</h4>
-            <p>{t.footer.brandText}</p>
+            <h4>Quick Links</h4>
+            <p><button className="footer-link-btn" onClick={() => setActivePage("dashboard")}>Home</button></p>
+            <p><button className="footer-link-btn" onClick={() => setActivePage("home")}>Scholarships</button></p>
+            <p><button className="footer-link-btn" onClick={() => setActivePage("aiassistant")}>AI Assistant</button></p>
+            <p><button className="footer-link-btn" onClick={() => setActivePage("track")}>Track Applications</button></p>
           </div>
           <div>
-            <h4>{t.footer.contactTitle}</h4>
+            <h4>Scholarship Portals</h4>
+            <p><a className="footer-link-anchor" href="https://scholarships.gov.in" target="_blank" rel="noreferrer">National Scholarship Portal</a></p>
+            <p><a className="footer-link-anchor" href="https://www.aicte-india.org" target="_blank" rel="noreferrer">AICTE</a></p>
+            <p><a className="footer-link-anchor" href="https://www.buddy4study.com" target="_blank" rel="noreferrer">Buddy4Study</a></p>
+          </div>
+          <div>
+            <h4>Contact</h4>
             <p>Email: jnananet.team@gmail.com</p>
             <p>Support: support@jnananet.com</p>
             <p>Location: India</p>
           </div>
           <div>
-            <h4>{t.footer.cloudTitle}</h4>
-            <p>AI Engine: Amazon Bedrock</p>
-            <p>Storage: Amazon S3</p>
-            <p>Compute: Amazon EC2</p>
+            <h4>Privacy Policy</h4>
+            <p>We protect student profile data and use it only for scholarship discovery and assistance features.</p>
+          </div>
+          <div>
+            <h4>Terms</h4>
+            <p>JnanaNet provides guidance and redirects to official portals. Final eligibility is decided by scholarship authorities.</p>
           </div>
         </div>
         <p className="copyright">{t.footer.copyright}</p>
