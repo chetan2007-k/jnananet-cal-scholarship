@@ -8,7 +8,7 @@
 ![AWS](https://img.shields.io/badge/cloud-AWS-orange)
 
 ## Overview
-JnanaNet helps Indian students discover and apply for scholarships through a simple AI-assisted experience. The platform combines scholarship guidance, eligibility analysis, multilingual support, and application-oriented workflows so students can move from confusion to action quickly.
+JnanaNet helps Indian students discover and apply for scholarships through a simple AI-assisted experience. The platform combines scholarship guidance, eligibility analysis, multilingual support, profile-driven workflows, and application tracking so students can move from confusion to action quickly.
 
 ## Live Demo
 
@@ -38,14 +38,24 @@ JnanaNet provides:
 - Multilingual interface
 - Scholarship portal directory
 - Application guidance
+- Student profile and dashboard access
+- Smart filtering and scholarship comparison tools
 
 ## Features
-- AI Assistant for scholarship guidance
-- Scholarship eligibility checker
+- AI Assistant for scholarship guidance (with voice input support where available)
+- Scholarship eligibility checker and recommendation engine
 - Multilingual interface (English, Hindi, Tamil, Telugu)
-- Scholarship recommendation engine
-- Document guidance
-- Application tracker
+- Student authentication, dashboard, and profile management
+- Profile menu in navbar with Dashboard / My Profile / My Applications / Saved Scholarships
+- Scholarship save, apply, and tracking workflow
+- Dependent State → District dropdowns in profile and application forms
+- “Detect My State Automatically” using browser geolocation + reverse geocoding
+- Scholarship filter panel (Course, Income, State, Category, Amount, Deadline)
+- AI-style natural language scholarship search
+- Scholarship comparison tool (compare exactly 2 scholarships)
+- State-wise scholarship availability count panel
+- Floating live support chat widget
+- Support ticket system and admin ticket view
 - Scholarship portal directory
 
 ## Architecture
@@ -53,6 +63,7 @@ JnanaNet provides:
 ### Frontend
 - React + Vite
 - Hosted as static website
+- Single-page app with in-app navigation (dashboard, profile, scholarships, apply, tracking, support)
 
 ### Backend
 - Node.js + Express API
@@ -114,6 +125,27 @@ npm install
 npm run dev
 ```
 
+### 4) Build Frontend for Production
+```bash
+cd frontend
+npm run build
+```
+
+## Scholarship Page Highlights
+
+- Filter scholarships by Course, Income Range, State, Category, Amount, and Deadline.
+- Search scholarships using natural-language queries (example: "BTech scholarships under 3 lakh income").
+- Compare 2 scholarships side-by-side using the comparison table.
+- View state-wise scholarship counts in the "Scholarships Available by State" panel.
+
+## Student Profile & Application UX
+
+- Profile page supports editing student details and saves data in browser localStorage.
+- Navbar shows student profile access with quick navigation to dashboard and related pages.
+- Application and profile forms support dependent State/District selection.
+- One-click state detection can auto-fill state using browser geolocation permission.
+- Floating support chat is available across pages.
+
 ## Screenshots
 
 ### Homepage UI
@@ -130,8 +162,8 @@ _Add screenshot here_
 
 ## Future Enhancements
 - Integration with AWS Bedrock AI models
-- Voice AI assistant for rural students
-- AI-based scholarship recommendation engine
+- Deeper AI-based ranking and personalization pipeline
+- Scholarship data ingestion from more official state portals
 - Mobile app version
 
 ## Hackathon

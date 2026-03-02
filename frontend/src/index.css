@@ -819,6 +819,106 @@ select {
   flex-wrap: wrap;
 }
 
+.filter-panel {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.filter-panel select {
+  min-width: 145px;
+}
+
+.state-scholarship-map {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.state-scholarship-map h3 {
+  margin-bottom: 10px;
+}
+
+.state-list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+.state-list li {
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.ai-search {
+  margin-bottom: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.ai-search input {
+  flex: 1;
+  min-width: 260px;
+}
+
+.compare-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.compare-toolbar small {
+  color: var(--text-muted);
+}
+
+.compare-note {
+  margin-bottom: 10px;
+  color: #fb7185;
+}
+
+.compare-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.comparison-table {
+  padding: 12px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.comparison-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.comparison-table th,
+.comparison-table td {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 10px;
+  text-align: center;
+}
+
+.comparison-table th {
+  background: rgba(34, 211, 238, 0.16);
+}
+
 .btn-neon,
 .btn-glass {
   border: none;
@@ -896,6 +996,31 @@ select {
 
 .mandatory {
   color: #fb7185;
+}
+
+.detect-btn {
+  margin-top: 8px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  color: #031225;
+  font-weight: 700;
+  background: linear-gradient(120deg, var(--neon-cyan), var(--neon-blue));
+  cursor: pointer;
+}
+
+.detect-btn:hover {
+  filter: brightness(0.95);
+}
+
+.detect-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.detect-status {
+  margin-top: 2px;
+  color: var(--text-muted);
 }
 
 .result-box {
@@ -1730,10 +1855,108 @@ select {
   margin-bottom: 8px;
 }
 
-.voice-float {
+/* Floating support chat icon + panel */
+.support-chat-float {
   position: fixed;
   right: 24px;
   bottom: 24px;
+  z-index: 31;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  color: #02111f;
+  background: linear-gradient(120deg, var(--neon-cyan), var(--neon-blue));
+  box-shadow: 0 0 26px rgba(34, 211, 238, 0.4);
+  cursor: pointer;
+}
+
+.support-chat-window {
+  position: fixed;
+  right: 24px;
+  bottom: 92px;
+  z-index: 30;
+  width: min(360px, calc(100vw - 24px));
+  max-height: 430px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.38);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.support-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.support-chat-close {
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.support-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.support-chat-bubble {
+  padding: 10px 12px;
+  border-radius: 12px;
+  max-width: 92%;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.support-chat-bubble.support {
+  background: rgba(34, 211, 238, 0.18);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+}
+
+.support-chat-bubble.user {
+  margin-left: auto;
+  background: rgba(56, 189, 248, 0.35);
+  border: 1px solid rgba(56, 189, 248, 0.55);
+}
+
+.support-chat-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.support-chat-input-row input {
+  width: 100%;
+}
+
+.support-chat-input-row button {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+  background: rgba(34, 211, 238, 0.24);
+  color: var(--text-main);
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.voice-float {
+  position: fixed;
+  right: 24px;
+  bottom: 94px;
   z-index: 25;
   border: none;
   border-radius: 999px;
@@ -1878,6 +2101,46 @@ select {
 .app-shell.light .profile-dropdown button {
   color: #0f172a;
   border-bottom-color: rgba(15, 23, 42, 0.12);
+}
+
+.app-shell.light .state-list li {
+  background: rgba(255, 255, 255, 0.86);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+.app-shell.light .comparison-table th {
+  background: rgba(186, 230, 253, 0.55);
+}
+
+.app-shell.light .detect-btn {
+  color: #0f172a;
+}
+
+.app-shell.light .support-chat-window {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(15, 23, 42, 0.16);
+}
+
+.app-shell.light .support-chat-header {
+  border-bottom-color: rgba(15, 23, 42, 0.14);
+}
+
+.app-shell.light .support-chat-close {
+  color: #0f172a;
+}
+
+.app-shell.light .support-chat-input-row {
+  border-top-color: rgba(15, 23, 42, 0.14);
+}
+
+.app-shell.light .support-chat-bubble.support {
+  background: rgba(186, 230, 253, 0.6);
+  border-color: rgba(14, 116, 144, 0.22);
+}
+
+.app-shell.light .support-chat-bubble.user {
+  background: rgba(191, 219, 254, 0.8);
+  border-color: rgba(37, 99, 235, 0.24);
 }
 
 .app-shell.light .nav-btn.active {
@@ -2041,6 +2304,14 @@ select {
   .upload-grid {
     grid-template-columns: 1fr;
   }
+
+  .filter-panel {
+    justify-content: flex-start;
+  }
+
+  .ai-search input {
+    min-width: 200px;
+  }
 }
 
 @media (max-width: 840px) {
@@ -2149,9 +2420,30 @@ select {
     padding: 44px 16px;
   }
 
-  .voice-float {
+  .support-chat-float {
     right: 12px;
     bottom: 12px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .support-chat-window {
+    right: 12px;
+    bottom: 74px;
+    width: min(94vw, 360px);
+    max-height: 60vh;
+  }
+
+  .filter-panel select,
+  .filter-panel .btn-neon,
+  .ai-search input,
+  .ai-search .btn-neon {
+    width: 100%;
+  }
+
+  .voice-float {
+    right: 12px;
+    bottom: 74px;
     font-size: 14px;
     padding: 11px 14px;
   }

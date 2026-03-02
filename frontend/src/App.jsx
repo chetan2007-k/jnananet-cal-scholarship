@@ -24,7 +24,83 @@ const defaultStudentProfile = {
   collegeName: "",
   familyIncome: "",
   state: "",
+  district: "",
   category: "General",
+};
+
+// State -> district lookup used by dependent dropdowns in profile and application forms.
+const stateDistricts = {
+  "Andhra Pradesh": ["Anantapur", "Chittoor", "Guntur", "Krishna", "Nellore"],
+  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem", "Tiruchirappalli"],
+  Karnataka: ["Bengaluru", "Mysuru", "Mangaluru", "Hubli", "Belagavi"],
+};
+
+const availableStates = Object.keys(stateDistricts);
+
+const defaultScholarshipFilters = {
+  course: "",
+  incomeRange: "",
+  state: "",
+  category: "",
+  amount: "",
+  deadlineDays: "",
+};
+
+const scholarshipFallbackStates = {
+  1: "Tamil Nadu",
+  2: "Andhra Pradesh",
+  3: "Karnataka",
+  4: "Tamil Nadu",
+};
+
+const beneficiaryCategories = ["General", "OBC", "SC", "ST"];
+
+const parseScholarshipAmount = (amountLabel) => {
+  const numeric = Number.parseInt(String(amountLabel || "").replace(/[^\d]/g, ""), 10);
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
+const parseIncomeLimitFromQuery = (query) => {
+  const amountMatch = query.match(/(\d+(?:\.\d+)?)\s*(lakh|lac|l|k|thousand)?/i);
+  if (!amountMatch) return null;
+
+  const value = Number.parseFloat(amountMatch[1]);
+  if (!Number.isFinite(value)) return null;
+
+  const unit = String(amountMatch[2] || "").toLowerCase();
+  if (["lakh", "lac", "l"].includes(unit)) return Math.round(value * 100000);
+  if (["k", "thousand"].includes(unit)) return Math.round(value * 1000);
+  return Math.round(value);
+};
+
+const getScholarshipState = (scholarship) => {
+  if (scholarship?.state && availableStates.includes(scholarship.state)) {
+    return scholarship.state;
+  }
+  if (scholarship?.state) {
+    const normalized = normalizeDetectedState(scholarship.state);
+    if (normalized) return normalized;
+  }
+  return scholarshipFallbackStates[scholarship?.id] || "All India";
+};
+
+const getScholarshipCategory = (scholarship) => {
+  return beneficiaryCategories.includes(scholarship?.category) ? scholarship.category : "General";
+};
+
+const normalizeDetectedState = (rawState = "") => {
+  const cleaned = String(rawState).trim();
+  if (!cleaned) return "";
+
+  const normalizedByExact = availableStates.find(
+    (state) => state.toLowerCase() === cleaned.toLowerCase()
+  );
+  if (normalizedByExact) return normalizedByExact;
+
+  const normalizedByIncludes = availableStates.find(
+    (state) => cleaned.toLowerCase().includes(state.toLowerCase()) || state.toLowerCase().includes(cleaned.toLowerCase())
+  );
+  return normalizedByIncludes || "";
 };
 
 const readStudentProfile = () => {
@@ -905,6 +981,13 @@ function App() {
   const [selectedScholarshipId, setSelectedScholarshipId] = useState(null);
   const [eligibilityCheckResult, setEligibilityCheckResult] = useState(null);
   const [isEligibilityChecking, setIsEligibilityChecking] = useState(false);
+  const [scholarshipFilterDraft, setScholarshipFilterDraft] = useState(defaultScholarshipFilters);
+  const [scholarshipFilters, setScholarshipFilters] = useState(defaultScholarshipFilters);
+  const [aiSearchQueryInput, setAiSearchQueryInput] = useState("");
+  const [aiSearchQuery, setAiSearchQuery] = useState("");
+  const [compareSelection, setCompareSelection] = useState([]);
+  const [comparisonNotice, setComparisonNotice] = useState("");
+  const [showComparisonTable, setShowComparisonTable] = useState(false);
   const [savedScholarships, setSavedScholarships] = useState(() => readStorageArray("jnananet_saved_scholarships"));
   const [supportTickets, setSupportTickets] = useState(() => readStorageArray("jnananet_support_tickets"));
   const [ticketForm, setTicketForm] = useState({
@@ -913,6 +996,19 @@ function App() {
     screenshotName: "",
   });
   const [ticketStatus, setTicketStatus] = useState("");
+  const [isDetectingApplyState, setIsDetectingApplyState] = useState(false);
+  const [isDetectingProfileState, setIsDetectingProfileState] = useState(false);
+  const [applyDetectStatus, setApplyDetectStatus] = useState("");
+  const [profileDetectStatus, setProfileDetectStatus] = useState("");
+  const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
+  const [supportChatMessage, setSupportChatMessage] = useState("");
+  const [supportChatLog, setSupportChatLog] = useState([
+    {
+      id: `support-${Date.now()}`,
+      role: "support",
+      text: "Hi! Welcome to JnanaNet Support. How can we help you today?",
+    },
+  ]);
   const [authUser, setAuthUser] = useState(() => {
     if (typeof window === "undefined") return null;
     try {
@@ -1010,6 +1106,7 @@ function App() {
       collegeName: "",
       familyIncome: authUser.familyIncome ? String(authUser.familyIncome) : "",
       state: "",
+      district: "",
       category: "General",
     };
 
@@ -1145,6 +1242,87 @@ function App() {
     setStudentProfileForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // On state change, district is reset so only valid districts can be selected.
+  const updateStudentProfileState = (state) => {
+    setStudentProfileForm((prev) => ({ ...prev, state, district: "" }));
+  };
+
+  // On state change, district is reset so only valid districts can be selected.
+  const updateApplicationState = (state) => {
+    setApplicationForm((prev) => ({ ...prev, state, district: "" }));
+  };
+
+  // Detects coordinates via browser geolocation and resolves the state with reverse geocoding.
+  const detectStateWithGeolocation = async ({ onStateDetected, setStatus, setLoading }) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setStatus("Geolocation is not supported in this browser.");
+      return;
+    }
+
+    setLoading(true);
+    setStatus("Detecting your location...");
+
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+        });
+      });
+
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`
+      );
+
+      if (!response.ok) {
+        throw new Error("Reverse geocoding failed");
+      }
+
+      const data = await response.json();
+      const detectedRawState = data?.address?.state || data?.address?.state_district || "";
+      const mappedState = normalizeDetectedState(detectedRawState);
+
+      if (!mappedState) {
+        setStatus("State detected, but not available in dropdown list.");
+        return;
+      }
+
+      onStateDetected(mappedState);
+      setStatus(`✅ Detected state: ${mappedState}`);
+    } catch (error) {
+      if (error?.code === 1) {
+        setStatus("Location permission denied.");
+      } else if (error?.code === 2) {
+        setStatus("Unable to detect your location.");
+      } else if (error?.code === 3) {
+        setStatus("Location request timed out.");
+      } else {
+        setStatus("Could not detect state automatically. Please select manually.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDetectApplyState = () => {
+    detectStateWithGeolocation({
+      onStateDetected: updateApplicationState,
+      setStatus: setApplyDetectStatus,
+      setLoading: setIsDetectingApplyState,
+    });
+  };
+
+  const handleDetectProfileState = () => {
+    detectStateWithGeolocation({
+      onStateDetected: updateStudentProfileState,
+      setStatus: setProfileDetectStatus,
+      setLoading: setIsDetectingProfileState,
+    });
+  };
+
   // Save profile details locally and reflect display name/email immediately in navbar/dashboard.
   const handleStudentProfileSubmit = (event) => {
     event.preventDefault();
@@ -1157,6 +1335,7 @@ function App() {
       collegeName: studentProfileForm.collegeName.trim(),
       familyIncome: studentProfileForm.familyIncome,
       state: studentProfileForm.state.trim(),
+      district: studentProfileForm.district.trim(),
       category: studentProfileForm.category || "General",
     };
 
@@ -1423,6 +1602,27 @@ function App() {
     setTicketStatus("✅ Ticket submitted successfully.");
   };
 
+  // Simple local support chat handler (frontend-only).
+  const sendSupportChatMessage = () => {
+    const message = supportChatMessage.trim();
+    if (!message) return;
+
+    const userEntry = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      text: message,
+    };
+
+    const supportEntry = {
+      id: `support-${Date.now() + 1}`,
+      role: "support",
+      text: "Thanks for your message. Our support team will review this shortly. You can also raise a support ticket from the Support page.",
+    };
+
+    setSupportChatLog((prev) => [...prev, userEntry, supportEntry]);
+    setSupportChatMessage("");
+  };
+
   const handleAuthInput = (field, value) => {
     setAuthForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -1682,6 +1882,117 @@ function App() {
         .slice(0, 10);
   };
 
+  const updateScholarshipFilterDraft = (field, value) => {
+    setScholarshipFilterDraft((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const applyScholarshipFilters = () => {
+    setScholarshipFilters(scholarshipFilterDraft);
+    setCompareSelection([]);
+    setShowComparisonTable(false);
+    setComparisonNotice("");
+  };
+
+  const getFilteredScholarships = (scholarships) => {
+    return scholarships.filter(({ scholarship }) => {
+      const incomeLimit = Number.parseInt(scholarshipFilters.incomeRange || "0", 10);
+      const minAmount = Number.parseInt(scholarshipFilters.amount || "0", 10);
+      const deadlineLimitDays = Number.parseInt(scholarshipFilters.deadlineDays || "0", 10);
+      const scholarshipState = getScholarshipState(scholarship);
+      const scholarshipCategory = getScholarshipCategory(scholarship);
+      const scholarshipAmount = parseScholarshipAmount(scholarship.amount);
+      const deadlineDaysLeft = getDaysLeft(scholarship.deadline);
+
+      return (
+        (!scholarshipFilters.course || String(scholarship.course) === scholarshipFilters.course)
+        && (!incomeLimit || Number(scholarship.maxIncome || 0) <= incomeLimit)
+        && (!scholarshipFilters.state || scholarshipState === scholarshipFilters.state)
+        && (!scholarshipFilters.category || scholarshipCategory === scholarshipFilters.category)
+        && (!minAmount || scholarshipAmount >= minAmount)
+        && (!deadlineLimitDays || (deadlineDaysLeft !== null && deadlineDaysLeft <= deadlineLimitDays))
+      );
+    });
+  };
+
+  // Natural-language scholarship search over existing scholarship objects.
+  const getAiSearchFilteredScholarships = (scholarships) => {
+    const query = aiSearchQuery.trim().toLowerCase();
+    if (!query) return scholarships;
+
+    const matchedState = availableStates.find((state) => query.includes(state.toLowerCase()));
+    const matchedCategory = beneficiaryCategories.find((category) => query.includes(category.toLowerCase()));
+    const knownCourses = [...new Set(scholarships.map(({ scholarship }) => scholarship.course).filter(Boolean))];
+    const matchedCourse = knownCourses.find((course) => {
+      const compactCourse = String(course).toLowerCase().replace(/\./g, "");
+      return query.includes(String(course).toLowerCase()) || query.includes(compactCourse);
+    });
+
+    const mentionsIncome = /under|below|income/.test(query);
+    const incomeLimit = mentionsIncome ? parseIncomeLimitFromQuery(query) : null;
+
+    const keywordTokens = query
+      .split(/\s+/)
+      .map((token) => token.replace(/[^a-z0-9.]/g, ""))
+      .filter((token) => token.length > 2 && !["scholarship", "scholarships", "income", "under", "below", "for"].includes(token));
+
+    const hasStructuredSignal = Boolean(matchedState || matchedCategory || matchedCourse || incomeLimit);
+
+    return scholarships.filter(({ scholarship }) => {
+      const scholarshipState = getScholarshipState(scholarship);
+      const scholarshipCategory = getScholarshipCategory(scholarship);
+      const searchableText = [
+        scholarship.name,
+        scholarship.provider,
+        scholarship.course,
+        scholarshipState,
+        scholarshipCategory,
+      ].join(" ").toLowerCase();
+
+      const keywordMatch = keywordTokens.length === 0 || keywordTokens.some((token) => searchableText.includes(token));
+
+      return (
+        (!matchedState || scholarshipState === matchedState)
+        && (!matchedCategory || scholarshipCategory === matchedCategory)
+        && (!matchedCourse || String(scholarship.course) === matchedCourse)
+        && (!incomeLimit || Number(scholarship.maxIncome || 0) <= incomeLimit)
+        && (hasStructuredSignal ? true : keywordMatch)
+      );
+    });
+  };
+
+  const searchScholarships = () => {
+    setAiSearchQuery(aiSearchQueryInput);
+    setCompareSelection([]);
+    setShowComparisonTable(false);
+    setComparisonNotice("");
+  };
+
+  const handleCompareToggle = (scholarshipId, checked) => {
+    if (checked) {
+      if (compareSelection.length >= 2) {
+        setComparisonNotice("Please select only 2 scholarships to compare.");
+        return;
+      }
+      setCompareSelection((prev) => [...prev, scholarshipId]);
+      setComparisonNotice("");
+      return;
+    }
+
+    setCompareSelection((prev) => prev.filter((id) => id !== scholarshipId));
+    setComparisonNotice("");
+    setShowComparisonTable(false);
+  };
+
+  const compareScholarships = () => {
+    if (compareSelection.length !== 2) {
+      setComparisonNotice("Please select exactly 2 scholarships to compare.");
+      setShowComparisonTable(false);
+      return;
+    }
+    setComparisonNotice("");
+    setShowComparisonTable(true);
+  };
+
   const typeMessage = (text) => new Promise((resolve) => {
     const messageId = `assistant-${Date.now()}`;
     setChatMessages((prev) => [...prev, { id: messageId, role: "assistant", text: "", typing: true }]);
@@ -1741,6 +2052,19 @@ function App() {
     const displayedScore = eligibilityScore || 87;
     const aiConfidence = Math.min(100, Math.round((displayedScore / 100) * 92 + 5));
     const scholarships = getRecommendedScholarships();
+    const filteredScholarships = getFilteredScholarships(scholarships);
+    const aiSearchScholarships = getAiSearchFilteredScholarships(filteredScholarships);
+    const courseFilterOptions = [...new Set(scholarships.map(({ scholarship }) => scholarship.course).filter(Boolean))];
+    const comparedScholarships = compareSelection
+      .map((id) => scholarships.find(({ scholarship }) => scholarship.id === id)?.scholarship)
+      .filter(Boolean);
+    const stateScholarshipCounts = aiSearchScholarships.reduce((accumulator, { scholarship }) => {
+      const state = getScholarshipState(scholarship);
+      accumulator[state] = (accumulator[state] || 0) + 1;
+      return accumulator;
+    }, {});
+    const stateScholarshipEntries = Object.entries(stateScholarshipCounts)
+      .sort((left, right) => right[1] - left[1]);
     const impactData = [
       { icon: "👨‍🎓", value: "50M+", label: t.homeCards.stat1 },
       { icon: "📉", value: "70%", label: t.homeCards.stat2 },
@@ -1783,12 +2107,167 @@ function App() {
             <h2>{t.homeCards.recommended}</h2>
             <p>Top scholarships personalized for your profile.</p>
           </div>
+          <div className="glass filter-panel" role="group" aria-label="Scholarship filters">
+            <select
+              id="courseFilter"
+              value={scholarshipFilterDraft.course}
+              onChange={(event) => updateScholarshipFilterDraft("course", event.target.value)}
+            >
+              <option value="">Course</option>
+              {courseFilterOptions.map((course) => (
+                <option key={course} value={course}>{course}</option>
+              ))}
+            </select>
+
+            <select
+              id="incomeFilter"
+              value={scholarshipFilterDraft.incomeRange}
+              onChange={(event) => updateScholarshipFilterDraft("incomeRange", event.target.value)}
+            >
+              <option value="">Income Range</option>
+              <option value="100000">Below ₹1L</option>
+              <option value="300000">Below ₹3L</option>
+              <option value="500000">Below ₹5L</option>
+              <option value="800000">Below ₹8L</option>
+            </select>
+
+            <select
+              id="stateFilter"
+              value={scholarshipFilterDraft.state}
+              onChange={(event) => updateScholarshipFilterDraft("state", event.target.value)}
+            >
+              <option value="">State</option>
+              {availableStates.map((state) => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
+
+            <select
+              id="categoryFilter"
+              value={scholarshipFilterDraft.category}
+              onChange={(event) => updateScholarshipFilterDraft("category", event.target.value)}
+            >
+              <option value="">Category</option>
+              {beneficiaryCategories.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+
+            <select
+              id="amountFilter"
+              value={scholarshipFilterDraft.amount}
+              onChange={(event) => updateScholarshipFilterDraft("amount", event.target.value)}
+            >
+              <option value="">Scholarship Amount</option>
+              <option value="10000">Above ₹10,000</option>
+              <option value="50000">Above ₹50,000</option>
+              <option value="100000">Above ₹1,00,000</option>
+            </select>
+
+            <select
+              id="deadlineFilter"
+              value={scholarshipFilterDraft.deadlineDays}
+              onChange={(event) => updateScholarshipFilterDraft("deadlineDays", event.target.value)}
+            >
+              <option value="">Deadline</option>
+              <option value="30">Within 30 days</option>
+              <option value="60">Within 60 days</option>
+              <option value="90">Within 90 days</option>
+            </select>
+
+            <button type="button" className="btn-neon" onClick={applyScholarshipFilters}>
+              Apply Filters
+            </button>
+          </div>
+
+          <div className="glass state-scholarship-map">
+            <h3>Scholarships Available by State</h3>
+            <ul id="stateList" className="state-list">
+              {stateScholarshipEntries.length === 0 && <li>No scholarships found for selected filters.</li>}
+              {stateScholarshipEntries.map(([state, count]) => (
+                <li key={state}>{state} – {count} Scholarship{count > 1 ? "s" : ""}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="glass ai-search" role="search">
+            <input
+              type="text"
+              id="aiSearchInput"
+              value={aiSearchQueryInput}
+              onChange={(event) => setAiSearchQueryInput(event.target.value)}
+              placeholder="Search scholarships... (example: BTech scholarships under 3 lakh income)"
+            />
+            <button type="button" className="btn-neon" onClick={searchScholarships}>Search</button>
+          </div>
+
+          <div className="compare-toolbar">
+            <button type="button" className="btn-glass" onClick={compareScholarships}>Compare Selected</button>
+            <small>Selected: {compareSelection.length}/2</small>
+          </div>
+          {comparisonNotice && <p className="compare-note">{comparisonNotice}</p>}
+
+          {showComparisonTable && comparedScholarships.length === 2 && (
+            <div id="comparisonTable" className="comparison-table glass">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    <th>{comparedScholarships[0].name}</th>
+                    <th>{comparedScholarships[1].name}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Amount</td>
+                    <td>{comparedScholarships[0].amount}</td>
+                    <td>{comparedScholarships[1].amount}</td>
+                  </tr>
+                  <tr>
+                    <td>Provider</td>
+                    <td>{comparedScholarships[0].provider}</td>
+                    <td>{comparedScholarships[1].provider}</td>
+                  </tr>
+                  <tr>
+                    <td>Deadline</td>
+                    <td>{comparedScholarships[0].deadline}</td>
+                    <td>{comparedScholarships[1].deadline}</td>
+                  </tr>
+                  <tr>
+                    <td>Course</td>
+                    <td>{comparedScholarships[0].course}</td>
+                    <td>{comparedScholarships[1].course}</td>
+                  </tr>
+                  <tr>
+                    <td>Category</td>
+                    <td>{getScholarshipCategory(comparedScholarships[0])}</td>
+                    <td>{getScholarshipCategory(comparedScholarships[1])}</td>
+                  </tr>
+                  <tr>
+                    <td>State</td>
+                    <td>{getScholarshipState(comparedScholarships[0])}</td>
+                    <td>{getScholarshipState(comparedScholarships[1])}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {isScholarshipLoading && <p className="loading-note">Loading scholarships...</p>}
           <div className="scholarship-grid">
-            {scholarships.map(({ scholarship, match }) => (
+            {aiSearchScholarships.map(({ scholarship, match }) => (
               <article className="glass scholarship-card" key={scholarship.id || scholarship.name}>
                 <h3>{scholarship.name}</h3>
                 <p>{scholarship.provider}</p>
+                <label className="compare-toggle">
+                  <input
+                    type="checkbox"
+                    className="compareCheck"
+                    checked={compareSelection.includes(scholarship.id)}
+                    onChange={(event) => handleCompareToggle(scholarship.id, event.target.checked)}
+                  />
+                  Compare
+                </label>
                 <div className="scholarship-bottom">
                   <div className="scholarship-primary-stack">
                     <p className="scholarship-amount">{scholarship.amount}</p>
@@ -1816,6 +2295,7 @@ function App() {
               </article>
             ))}
           </div>
+          {aiSearchScholarships.length === 0 && <p className="loading-note">No scholarships matched your AI search query.</p>}
         </section>
 
         <section className="moon-section home-insight-grid">
@@ -2076,19 +2556,37 @@ function App() {
           </label>
           <label>
             {t.apply.state} <span className="mandatory">*</span>
-            <input
-              type="text"
+            <select
               value={applicationForm.state}
-              onChange={(e) => updateApplicationForm("state", e.target.value)}
-            />
+              onChange={(e) => updateApplicationState(e.target.value)}
+            >
+              <option value="">Select State</option>
+              {availableStates.map((state) => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="detect-btn"
+              onClick={handleDetectApplyState}
+              disabled={isDetectingApplyState}
+            >
+              {isDetectingApplyState ? "Detecting..." : "📍 Detect My State Automatically"}
+            </button>
+            {applyDetectStatus && <small className="detect-status">{applyDetectStatus}</small>}
           </label>
           <label>
             {t.apply.district} <span className="mandatory">*</span>
-            <input
-              type="text"
+            <select
               value={applicationForm.district}
               onChange={(e) => updateApplicationForm("district", e.target.value)}
-            />
+              disabled={!applicationForm.state}
+            >
+              <option value="">Select District</option>
+              {(stateDistricts[applicationForm.state] || []).map((district) => (
+                <option key={district} value={district}>{district}</option>
+              ))}
+            </select>
           </label>
           <label>
             {t.apply.institution} <span className="mandatory">*</span>
@@ -2861,12 +3359,38 @@ function App() {
 
             <label>
               State
-              <input
-                type="text"
+              <select
                 value={studentProfileForm.state}
-                onChange={(event) => updateStudentProfileForm("state", event.target.value)}
-                placeholder="State"
-              />
+                onChange={(event) => updateStudentProfileState(event.target.value)}
+              >
+                <option value="">Select State</option>
+                {availableStates.map((state) => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="detect-btn"
+                onClick={handleDetectProfileState}
+                disabled={isDetectingProfileState}
+              >
+                {isDetectingProfileState ? "Detecting..." : "📍 Detect My State Automatically"}
+              </button>
+              {profileDetectStatus && <small className="detect-status">{profileDetectStatus}</small>}
+            </label>
+
+            <label>
+              District
+              <select
+                value={studentProfileForm.district}
+                onChange={(event) => updateStudentProfileForm("district", event.target.value)}
+                disabled={!studentProfileForm.state}
+              >
+                <option value="">Select District</option>
+                {(stateDistricts[studentProfileForm.state] || []).map((district) => (
+                  <option key={district} value={district}>{district}</option>
+                ))}
+              </select>
             </label>
 
             <label>
@@ -2892,6 +3416,60 @@ function App() {
 
   const studentDisplayName = studentProfileForm.fullName || authUser?.name || "Student";
 
+  const renderSupportChatWidget = () => (
+    <>
+      {/* Floating support icon visible across pages */}
+      <button
+        className="support-chat-float"
+        onClick={() => setIsSupportChatOpen((prev) => !prev)}
+        aria-label="Open support chat"
+        aria-expanded={isSupportChatOpen}
+      >
+        💬
+      </button>
+
+      {isSupportChatOpen && (
+        <div className="support-chat-window" role="dialog" aria-label="JnanaNet Support Chat">
+          <div className="support-chat-header">
+            <strong>JnanaNet Support</strong>
+            <button
+              type="button"
+              className="support-chat-close"
+              onClick={() => setIsSupportChatOpen(false)}
+              aria-label="Close support chat"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="support-chat-messages">
+            {supportChatLog.map((entry) => (
+              <p key={entry.id} className={`support-chat-bubble ${entry.role === "user" ? "user" : "support"}`}>
+                {entry.text}
+              </p>
+            ))}
+          </div>
+
+          <div className="support-chat-input-row">
+            <input
+              type="text"
+              value={supportChatMessage}
+              onChange={(event) => setSupportChatMessage(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  sendSupportChatMessage();
+                }
+              }}
+              placeholder="Type your message"
+            />
+            <button type="button" onClick={sendSupportChatMessage}>Send</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   if (!authUser) {
     // Protected app gate: users must log in before accessing any page.
     return (
@@ -2899,6 +3477,7 @@ function App() {
         <div className="starfield" />
         <div className="demo-banner">{t.demoBanner}</div>
         {renderAuth()}
+        {renderSupportChatWidget()}
       </div>
     );
   }
@@ -2996,6 +3575,7 @@ function App() {
       {activePage === "auth" && renderAuth()}
       {activePage === "scholarshipDetails" && renderScholarshipDetails()}
 
+      {renderSupportChatWidget()}
       <button className="voice-float" onClick={() => setActivePage("aiassistant")}>{t.footer.voiceButton}</button>
 
       <footer className="footer glass">
