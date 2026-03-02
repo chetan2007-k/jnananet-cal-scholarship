@@ -2585,17 +2585,10 @@ function App() {
           </div>
         </div>
 
-        {/* 3D model panel shown on desktop/tablet for visual engagement. */}
-        <div className="auth-visual-panel">
+        {/* Replaced inaccessible 3D iframe with a static illustration panel. */}
+        <div className="auth-visual-panel login-image">
           <div className="glass auth-animation-card">
-            <iframe
-              src="https://my.spline.design/studentanimation"
-              frameBorder="0"
-              width="100%"
-              height="500"
-              title="Student 3D animation"
-              loading="lazy"
-            />
+            <img src="/student-login.svg" alt="Student login illustration" loading="lazy" />
           </div>
         </div>
       </div>

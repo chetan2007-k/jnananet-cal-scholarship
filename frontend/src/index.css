@@ -1463,16 +1463,18 @@ select {
 .auth-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: 60px;
   align-items: stretch;
+  padding: 24px;
 }
 
-/* Glassmorphism form panel */
+/* Clean professional login card */
 .auth-form-panel {
-  backdrop-filter: blur(15px);
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  color: #0f172a;
 }
 
 .auth-utility-row {
@@ -1485,18 +1487,19 @@ select {
 .auth-form-panel h1 {
   font-size: clamp(1.8rem, 3.2vw, 2.3rem);
   margin-bottom: 6px;
+  color: #0f172a;
 }
 
 .auth-subtitle {
-  color: var(--text-muted);
+  color: #334155;
   margin-bottom: 8px;
 }
 
 .typing-line {
   min-height: 28px;
-  color: #a5f3fc;
+  color: #0369a1;
   margin-bottom: 12px;
-  border-right: 2px solid rgba(165, 243, 252, 0.7);
+  border-right: 2px solid rgba(3, 105, 161, 0.6);
   width: fit-content;
   padding-right: 6px;
   animation: blink-caret 0.9s step-end infinite;
@@ -1511,10 +1514,15 @@ select {
 .auth-mode-title {
   margin-bottom: 10px;
   font-size: 1.1rem;
+  color: #0f172a;
 }
 
 .auth-login-form input {
   min-height: 44px;
+}
+
+.auth-login-form label {
+  color: #334155;
 }
 
 /* Modern CTA button animation */
@@ -1536,14 +1544,14 @@ select {
 .auth-link-btn {
   border: none;
   background: transparent;
-  color: var(--text-muted);
+  color: #475569;
   cursor: pointer;
   padding: 4px 0;
 }
 
 .auth-link-btn.active,
 .auth-link-btn:hover {
-  color: var(--text-main);
+  color: #0f172a;
   text-decoration: underline;
 }
 
@@ -1554,14 +1562,16 @@ select {
 .auth-animation-card {
   border-radius: 20px;
   overflow: hidden;
-  min-height: 540px;
-  background: rgba(15, 23, 42, 0.45);
+  min-height: 460px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.24);
 }
 
-.auth-animation-card iframe {
-  border: none;
+.auth-animation-card img {
   width: 100%;
   height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* Floating icons animation layer */
@@ -1993,9 +2003,11 @@ select {
 
   .auth-layout {
     grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 8px;
   }
 
-  /* Hide 3D animation panel on smaller screens for better usability */
+  /* Hide illustration panel on smaller screens for better usability */
   .auth-visual-panel {
     display: none;
   }
@@ -2005,6 +2017,12 @@ select {
     width: min(100%, 560px);
   }
 
+
+@media (max-width: 900px) {
+  .login-image {
+    display: none;
+  }
+}
   .scholarship-bottom {
     grid-template-columns: 1fr;
   }
