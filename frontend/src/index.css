@@ -1436,6 +1436,164 @@ select {
   max-width: 1000px;
 }
 
+/* Modern animated auth entry background */
+.app-shell.auth-entry {
+  background: linear-gradient(270deg, #0f172a, #1e3a8a, #0f172a);
+  background-size: 600% 600%;
+  animation: gradientMove 12s ease infinite;
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.auth-entry-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+/* Glassmorphism form panel */
+.auth-form-panel {
+  backdrop-filter: blur(15px);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.auth-utility-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.auth-form-panel h1 {
+  font-size: clamp(1.8rem, 3.2vw, 2.3rem);
+  margin-bottom: 6px;
+}
+
+.auth-subtitle {
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.typing-line {
+  min-height: 28px;
+  color: #a5f3fc;
+  margin-bottom: 12px;
+  border-right: 2px solid rgba(165, 243, 252, 0.7);
+  width: fit-content;
+  padding-right: 6px;
+  animation: blink-caret 0.9s step-end infinite;
+}
+
+@keyframes blink-caret {
+  50% {
+    border-color: transparent;
+  }
+}
+
+.auth-mode-title {
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+
+.auth-login-form input {
+  min-height: 44px;
+}
+
+/* Modern CTA button animation */
+.login-btn {
+  background: linear-gradient(90deg, #22c1f1, #3cc0ff);
+  box-shadow: 0 0 20px rgba(34, 193, 241, 0.4);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 40px rgba(34, 193, 241, 0.8);
+}
+
+.login-links {
+  margin-top: 12px;
+}
+
+.auth-link-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.auth-link-btn.active,
+.auth-link-btn:hover {
+  color: var(--text-main);
+  text-decoration: underline;
+}
+
+.auth-visual-panel {
+  display: grid;
+}
+
+.auth-animation-card {
+  border-radius: 20px;
+  overflow: hidden;
+  min-height: 540px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.auth-animation-card iframe {
+  border: none;
+  width: 100%;
+  height: 100%;
+}
+
+/* Floating icons animation layer */
+.floating-icons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-icons span {
+  position: absolute;
+  opacity: 0.12;
+  font-size: 30px;
+  animation: floatUp 9s infinite linear;
+}
+
+.floating-icons span:nth-child(1) { left: 8%; animation-delay: 0s; }
+.floating-icons span:nth-child(2) { left: 26%; animation-delay: 1.2s; }
+.floating-icons span:nth-child(3) { left: 48%; animation-delay: 2.4s; }
+.floating-icons span:nth-child(4) { left: 70%; animation-delay: 3.4s; }
+.floating-icons span:nth-child(5) { left: 88%; animation-delay: 4.2s; }
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(95vh) translateX(0);
+  }
+  100% {
+    transform: translateY(-15vh) translateX(10px);
+  }
+}
+
 .support-form {
   display: grid;
   gap: 10px;
@@ -1831,6 +1989,20 @@ select {
 
   .bubble {
     max-width: 92%;
+  }
+
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Hide 3D animation panel on smaller screens for better usability */
+  .auth-visual-panel {
+    display: none;
+  }
+
+  .auth-form-panel {
+    margin: 0 auto;
+    width: min(100%, 560px);
   }
 
   .scholarship-bottom {

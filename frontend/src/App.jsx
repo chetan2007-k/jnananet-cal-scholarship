@@ -15,6 +15,8 @@ const readStorageArray = (key) => {
   }
 };
 
+const AUTH_TYPING_TEXT = "Discover scholarships using AI";
+
 const deadlineData = [
   { scholarship: "NSP", deadline: "30 Nov", status: "open" },
   { scholarship: "Reliance", deadline: "15 Oct", status: "closing" },
@@ -906,6 +908,7 @@ function App() {
     familyIncome: "",
   });
   const [authMessage, setAuthMessage] = useState("");
+  const [typedAuthSubtitle, setTypedAuthSubtitle] = useState("");
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
@@ -966,6 +969,22 @@ function App() {
       income: prev.income || String(authUser.familyIncome || ""),
     }));
   }, [authUser]);
+
+  useEffect(() => {
+    // Typing animation for auth subtitle.
+    let index = 0;
+    setTypedAuthSubtitle("");
+
+    const timer = setInterval(() => {
+      index += 1;
+      setTypedAuthSubtitle(AUTH_TYPING_TEXT.slice(0, index));
+      if (index >= AUTH_TYPING_TEXT.length) {
+        clearInterval(timer);
+      }
+    }, 60);
+
+    return () => clearInterval(timer);
+  }, [authMode]);
 
   useEffect(() => {
     setOpenFaqIndex(null);
@@ -2479,59 +2498,105 @@ function App() {
   );
 
   const renderAuth = () => (
-    <section className="moon-section">
-      <div className="glass stories-shell auth-shell">
-        <h2>{authMode === "signup" ? "Create Account" : authMode === "forgot" ? "Forgot Password" : "Student Login"}</h2>
-        <p>Login to get personalized scholarship recommendations and dashboard insights.</p>
+    <section className="moon-section auth-entry-shell">
+      {/* Floating scholarship icons for subtle background motion. */}
+      <div className="floating-icons" aria-hidden="true">
+        <span>🎓</span>
+        <span>💰</span>
+        <span>📚</span>
+        <span>🎯</span>
+        <span>🧠</span>
+      </div>
 
-        <form className="support-form" onSubmit={handleAuthSubmit}>
-          {authMode === "signup" && (
+      <div className="auth-layout">
+        <div className="glass stories-shell auth-shell auth-form-panel">
+          <div className="auth-utility-row">
+            <select value={language} onChange={(event) => setLanguage(event.target.value)}>
+              <option>English</option>
+              <option>Tamil</option>
+              <option>Telugu</option>
+              <option>Hindi</option>
+            </select>
+            <button
+              className="theme-toggle"
+              onClick={() => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))}
+            >
+              {themeMode === "dark" ? t.nav.lightMode : t.nav.darkMode}
+            </button>
+          </div>
+
+          <h1>Welcome to JnanaNet</h1>
+          <p className="auth-subtitle">Find scholarships instantly using AI</p>
+          {/* Typing effect subtitle under heading. */}
+          <h2 id="typing" className="typing-line">{typedAuthSubtitle}</h2>
+
+          <h3 className="auth-mode-title">
+            {authMode === "signup" ? "Create Account" : authMode === "forgot" ? "Forgot Password" : "Student Login"}
+          </h3>
+
+          <form className="support-form auth-login-form" onSubmit={handleAuthSubmit}>
+            {authMode === "signup" && (
+              <label>
+                Name
+                <input type="text" value={authForm.name} onChange={(event) => handleAuthInput("name", event.target.value)} />
+              </label>
+            )}
+
             <label>
-              Name
-              <input type="text" value={authForm.name} onChange={(event) => handleAuthInput("name", event.target.value)} />
+              Email
+              <input type="email" value={authForm.email} onChange={(event) => handleAuthInput("email", event.target.value)} />
             </label>
-          )}
 
-          <label>
-            Email
-            <input type="email" value={authForm.email} onChange={(event) => handleAuthInput("email", event.target.value)} />
-          </label>
-
-          {authMode !== "forgot" && (
-            <label>
-              Password
-              <input type="password" value={authForm.password} onChange={(event) => handleAuthInput("password", event.target.value)} />
-            </label>
-          )}
-
-          {authMode === "signup" && (
-            <>
+            {authMode !== "forgot" && (
               <label>
-                Course
-                <input type="text" value={authForm.course} onChange={(event) => handleAuthInput("course", event.target.value)} />
+                Password
+                <input type="password" value={authForm.password} onChange={(event) => handleAuthInput("password", event.target.value)} />
               </label>
-              <label>
-                Percentage
-                <input type="number" value={authForm.percentage} onChange={(event) => handleAuthInput("percentage", event.target.value)} />
-              </label>
-              <label>
-                Family Income
-                <input type="number" value={authForm.familyIncome} onChange={(event) => handleAuthInput("familyIncome", event.target.value)} />
-              </label>
-            </>
-          )}
+            )}
 
-          <button className="btn-neon" type="submit">
-            {authMode === "signup" ? "Create Account" : authMode === "forgot" ? "Send Reset Link" : "Login"}
-          </button>
+            {authMode === "signup" && (
+              <>
+                <label>
+                  Course
+                  <input type="text" value={authForm.course} onChange={(event) => handleAuthInput("course", event.target.value)} />
+                </label>
+                <label>
+                  Percentage
+                  <input type="number" value={authForm.percentage} onChange={(event) => handleAuthInput("percentage", event.target.value)} />
+                </label>
+                <label>
+                  Family Income
+                  <input type="number" value={authForm.familyIncome} onChange={(event) => handleAuthInput("familyIncome", event.target.value)} />
+                </label>
+              </>
+            )}
 
-          {authMessage && <p className="contact-status ok">{authMessage}</p>}
-        </form>
+            <button className="btn-neon login-btn" type="submit">
+              {authMode === "signup" ? "Create Account" : authMode === "forgot" ? "Send Reset Link" : "Login"}
+            </button>
 
-        <div className="auth-switches">
-          <button className="btn-glass" onClick={() => setAuthMode("login")}>Login</button>
-          <button className="btn-glass" onClick={() => setAuthMode("signup")}>Sign Up</button>
-          <button className="btn-glass" onClick={() => setAuthMode("forgot")}>Forgot Password</button>
+            {authMessage && <p className="contact-status ok">{authMessage}</p>}
+          </form>
+
+          <div className="auth-switches login-links">
+            <button className={`auth-link-btn ${authMode === "signup" ? "active" : ""}`} onClick={() => setAuthMode("signup")}>Sign Up</button>
+            <button className={`auth-link-btn ${authMode === "forgot" ? "active" : ""}`} onClick={() => setAuthMode("forgot")}>Forgot Password</button>
+            <button className={`auth-link-btn ${authMode === "login" ? "active" : ""}`} onClick={() => setAuthMode("login")}>Login</button>
+          </div>
+        </div>
+
+        {/* 3D model panel shown on desktop/tablet for visual engagement. */}
+        <div className="auth-visual-panel">
+          <div className="glass auth-animation-card">
+            <iframe
+              src="https://my.spline.design/studentanimation"
+              frameBorder="0"
+              width="100%"
+              height="500"
+              title="Student 3D animation"
+              loading="lazy"
+            />
+          </div>
         </div>
       </div>
     </section>
@@ -2588,7 +2653,7 @@ function App() {
   if (!authUser) {
     // Protected app gate: users must log in before accessing any page.
     return (
-      <div className={`app-shell ${themeMode} ${miracleMode ? "miracle" : ""}`}>
+      <div className={`app-shell auth-entry ${themeMode} ${miracleMode ? "miracle" : ""}`}>
         <div className="starfield" />
         <div className="demo-banner">{t.demoBanner}</div>
         {renderAuth()}
