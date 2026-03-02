@@ -162,6 +162,65 @@ body {
   gap: 10px;
 }
 
+.profile-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.65);
+  color: var(--text-main);
+}
+
+.profile-name-label {
+  font-size: 13px;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.profile-dropdown {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  z-index: 20;
+  min-width: 220px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.96);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.profile-dropdown button {
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  background: transparent;
+  color: var(--text-main);
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.profile-dropdown button:last-child {
+  border-bottom: none;
+}
+
+.profile-dropdown button:hover {
+  background: rgba(34, 211, 238, 0.15);
+}
+
 .nav-actions select,
 .nav-actions input,
 .nav-actions button,
@@ -1436,6 +1495,30 @@ select {
   max-width: 1000px;
 }
 
+.profile-shell {
+  max-width: 980px;
+}
+
+.profile-form {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 /* Modern animated auth entry background */
 .app-shell.auth-entry {
   background: linear-gradient(270deg, #0f172a, #1e3a8a, #0f172a);
@@ -1785,6 +1868,18 @@ select {
   color: #0f172a;
 }
 
+.app-shell.light .profile-icon,
+.app-shell.light .profile-dropdown {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.18);
+}
+
+.app-shell.light .profile-dropdown button {
+  color: #0f172a;
+  border-bottom-color: rgba(15, 23, 42, 0.12);
+}
+
 .app-shell.light .nav-btn.active {
   border-color: rgba(2, 132, 199, 0.55);
   background: linear-gradient(120deg, rgba(125, 211, 252, 0.35), rgba(165, 180, 252, 0.35));
@@ -1960,10 +2055,27 @@ select {
     justify-content: center;
   }
 
+  .profile-menu {
+    justify-content: center;
+  }
+
+  .profile-name-label {
+    font-size: 12px;
+  }
+
+  .profile-dropdown {
+    width: min(260px, 90vw);
+  }
+
+  .profile-dropdown button {
+    display: block;
+  }
+
   .field-grid,
   .assistant-controls,
   .stories-grid,
   .dashboard-panel-grid,
+  .profile-form-grid,
   .contact-grid,
   .track-grid,
   .scholarship-details-grid,

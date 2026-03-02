@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./index.css";
 import ScholarshipDetails from "./ScholarshipDetails";
 
@@ -12,6 +12,28 @@ const readStorageArray = (key) => {
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
+  }
+};
+
+const STUDENT_PROFILE_KEY = "jnananet_student_profile";
+
+const defaultStudentProfile = {
+  fullName: "",
+  email: "",
+  course: "",
+  collegeName: "",
+  familyIncome: "",
+  state: "",
+  category: "General",
+};
+
+const readStudentProfile = () => {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = window.localStorage.getItem(STUDENT_PROFILE_KEY);
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
   }
 };
 
@@ -821,6 +843,8 @@ function App() {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [selectedApplyScholarship, setSelectedApplyScholarship] = useState(null);
   const [moreNavSelection, setMoreNavSelection] = useState("");
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const profileMenuRef = useRef(null);
 
   const [eligibilityForm, setEligibilityForm] = useState({
     percentage: "",
@@ -909,6 +933,8 @@ function App() {
   });
   const [authMessage, setAuthMessage] = useState("");
   const [typedAuthSubtitle, setTypedAuthSubtitle] = useState("");
+  const [studentProfileForm, setStudentProfileForm] = useState(defaultStudentProfile);
+  const [profileStatus, setProfileStatus] = useState("");
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
@@ -969,6 +995,51 @@ function App() {
       income: prev.income || String(authUser.familyIncome || ""),
     }));
   }, [authUser]);
+
+  useEffect(() => {
+    if (!authUser) {
+      setStudentProfileForm(defaultStudentProfile);
+      return;
+    }
+
+    const storedProfile = readStudentProfile();
+    const accountProfile = {
+      fullName: authUser.name || "",
+      email: authUser.email || "",
+      course: authUser.course || "",
+      collegeName: "",
+      familyIncome: authUser.familyIncome ? String(authUser.familyIncome) : "",
+      state: "",
+      category: "General",
+    };
+
+    setStudentProfileForm({
+      ...accountProfile,
+      ...(storedProfile || {}),
+    });
+  }, [authUser]);
+
+  useEffect(() => {
+    const closeMenuOnOutsideClick = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("mousedown", closeMenuOnOutsideClick);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("mousedown", closeMenuOnOutsideClick);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    setIsProfileDropdownOpen(false);
+  }, [activePage]);
 
   useEffect(() => {
     // Typing animation for auth subtitle.
@@ -1068,6 +1139,70 @@ function App() {
 
   const updateContactForm = (field, value) => {
     setContactForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateStudentProfileForm = (field, value) => {
+    setStudentProfileForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Save profile details locally and reflect display name/email immediately in navbar/dashboard.
+  const handleStudentProfileSubmit = (event) => {
+    event.preventDefault();
+
+    const updatedProfile = {
+      ...studentProfileForm,
+      fullName: studentProfileForm.fullName.trim(),
+      email: studentProfileForm.email.trim().toLowerCase(),
+      course: studentProfileForm.course.trim(),
+      collegeName: studentProfileForm.collegeName.trim(),
+      familyIncome: studentProfileForm.familyIncome,
+      state: studentProfileForm.state.trim(),
+      category: studentProfileForm.category || "General",
+    };
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STUDENT_PROFILE_KEY, JSON.stringify(updatedProfile));
+    }
+
+    setStudentProfileForm(updatedProfile);
+    setProfileStatus("✅ Profile updated successfully");
+    setTimeout(() => setProfileStatus(""), 2500);
+
+    setAuthUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        name: updatedProfile.fullName || prev.name,
+        email: updatedProfile.email || prev.email,
+        course: updatedProfile.course || prev.course,
+        familyIncome: Number.parseFloat(updatedProfile.familyIncome || "0") || 0,
+      };
+    });
+
+    if (typeof window !== "undefined" && authUser?.email) {
+      try {
+        const value = window.localStorage.getItem("jnananet_accounts");
+        const accounts = value ? JSON.parse(value) : [];
+        if (Array.isArray(accounts)) {
+          const currentEmail = String(authUser.email).toLowerCase();
+          const nextAccounts = accounts.map((account) => {
+            if (String(account.email).toLowerCase() !== currentEmail) {
+              return account;
+            }
+            return {
+              ...account,
+              name: updatedProfile.fullName || account.name,
+              email: updatedProfile.email || account.email,
+              course: updatedProfile.course || account.course,
+              familyIncome: Number.parseFloat(updatedProfile.familyIncome || "0") || 0,
+            };
+          });
+          window.localStorage.setItem("jnananet_accounts", JSON.stringify(nextAccounts));
+        }
+      } catch {
+        // Ignore malformed localStorage account data.
+      }
+    }
   };
 
   const handleCheckEligibility = () => {
@@ -1364,10 +1499,16 @@ function App() {
   };
 
   const handleLogout = () => {
+    setIsProfileDropdownOpen(false);
     setAuthUser(null);
     setAuthMode("login");
     setAuthMessage("");
     setActivePage("auth");
+  };
+
+  const navigateFromProfileMenu = (page) => {
+    setActivePage(page);
+    setIsProfileDropdownOpen(false);
   };
 
   const handleMoreNavigation = (value) => {
@@ -2603,11 +2744,17 @@ function App() {
       .filter((item) => getDaysLeft(item.deadline) !== null)
       .sort((left, right) => (getDaysLeft(left.deadline) || 9999) - (getDaysLeft(right.deadline) || 9999))
       .slice(0, 4);
+    const statusCounts = applicationHistory.reduce((acc, item) => {
+      const status = item.status || "Submitted";
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+    const applicationStatuses = Object.entries(statusCounts);
 
     return (
       <section className="moon-section">
         <div className="glass stories-shell dashboard-shell">
-          <h2 id="welcome">Welcome back! {authUser?.name || "Student"} 👋</h2>
+          <h2 id="welcome">Welcome back! {studentDisplayName} 👋</h2>
           <p>Personalized scholarship insights based on your profile.</p>
 
           <div className="dashboard-panel-grid">
@@ -2632,6 +2779,14 @@ function App() {
             </article>
 
             <article className="dashboard-panel">
+              <h3>Applications Status</h3>
+              {applicationStatuses.length === 0 && <p>No scholarship applications yet.</p>}
+              {applicationStatuses.map(([status, count]) => (
+                <p key={status}>✔ {status}: {count}</p>
+              ))}
+            </article>
+
+            <article className="dashboard-panel">
               <h3>Upcoming Deadlines</h3>
               {upcomingDeadlines.map((item) => (
                 <p key={item.id}>{item.name} – {item.deadline}</p>
@@ -2642,6 +2797,100 @@ function App() {
       </section>
     );
   };
+
+  const renderProfile = () => (
+    <section className="moon-section">
+      <div className="glass stories-shell profile-shell">
+        <h2>My Profile</h2>
+        <p>Update your student details used for scholarship recommendations.</p>
+
+        <form className="profile-form" id="profileForm" onSubmit={handleStudentProfileSubmit}>
+          <div className="profile-form-grid">
+            <label>
+              Full Name
+              <input
+                id="name"
+                type="text"
+                value={studentProfileForm.fullName}
+                onChange={(event) => updateStudentProfileForm("fullName", event.target.value)}
+                placeholder="Full Name"
+                required
+              />
+            </label>
+
+            <label>
+              Email
+              <input
+                type="email"
+                value={studentProfileForm.email}
+                onChange={(event) => updateStudentProfileForm("email", event.target.value)}
+                placeholder="Email"
+                required
+              />
+            </label>
+
+            <label>
+              Course
+              <input
+                type="text"
+                value={studentProfileForm.course}
+                onChange={(event) => updateStudentProfileForm("course", event.target.value)}
+                placeholder="Course"
+              />
+            </label>
+
+            <label>
+              College Name
+              <input
+                type="text"
+                value={studentProfileForm.collegeName}
+                onChange={(event) => updateStudentProfileForm("collegeName", event.target.value)}
+                placeholder="College Name"
+              />
+            </label>
+
+            <label>
+              Family Income
+              <input
+                type="number"
+                value={studentProfileForm.familyIncome}
+                onChange={(event) => updateStudentProfileForm("familyIncome", event.target.value)}
+                placeholder="Family Income"
+              />
+            </label>
+
+            <label>
+              State
+              <input
+                type="text"
+                value={studentProfileForm.state}
+                onChange={(event) => updateStudentProfileForm("state", event.target.value)}
+                placeholder="State"
+              />
+            </label>
+
+            <label>
+              Category
+              <select
+                value={studentProfileForm.category}
+                onChange={(event) => updateStudentProfileForm("category", event.target.value)}
+              >
+                <option>General</option>
+                <option>OBC</option>
+                <option>SC</option>
+                <option>ST</option>
+              </select>
+            </label>
+          </div>
+
+          <button className="btn-neon" type="submit">Update Profile</button>
+          {profileStatus && <p className="contact-status ok">{profileStatus}</p>}
+        </form>
+      </div>
+    </section>
+  );
+
+  const studentDisplayName = studentProfileForm.fullName || authUser?.name || "Student";
 
   if (!authUser) {
     // Protected app gate: users must log in before accessing any page.
@@ -2697,11 +2946,6 @@ function App() {
           >
             {themeMode === "dark" ? t.nav.lightMode : t.nav.darkMode}
           </button>
-          {authUser ? (
-            <button className="btn-glass" onClick={handleLogout}>Logout</button>
-          ) : (
-            <button className="btn-glass" onClick={() => setActivePage("auth")}>Login / Signup</button>
-          )}
           <label className="miracle-toggle">
             {t.nav.miracleMode}
             <input
@@ -2710,11 +2954,33 @@ function App() {
               onChange={() => setMiracleMode(!miracleMode)}
             />
           </label>
+          <div className="profile-menu" ref={profileMenuRef}>
+            <button
+              className="profile-icon"
+              onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
+              aria-label="Open profile menu"
+              aria-expanded={isProfileDropdownOpen}
+            >
+              👤
+            </button>
+            <span className="profile-name-label">👤 {studentDisplayName}</span>
+
+            {isProfileDropdownOpen && (
+              <div id="profileDropdown" className="profile-dropdown">
+                <button type="button" onClick={() => navigateFromProfileMenu("dashboard")}>Dashboard</button>
+                <button type="button" onClick={() => navigateFromProfileMenu("profile")}>My Profile</button>
+                <button type="button" onClick={() => navigateFromProfileMenu("track")}>My Applications</button>
+                <button type="button" onClick={() => navigateFromProfileMenu("saved")}>Saved Scholarships</button>
+                <button type="button" onClick={handleLogout}>Logout</button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
       {activePage === "home" && renderHome()}
       {activePage === "dashboard" && renderDashboard()}
+      {activePage === "profile" && renderProfile()}
       {activePage === "eligibility" && renderEligibility()}
       {activePage === "apply" && renderApply()}
       {activePage === "track" && renderTrackHistory()}
