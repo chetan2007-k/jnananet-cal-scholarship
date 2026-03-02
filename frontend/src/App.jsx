@@ -40,8 +40,8 @@ const translations = {
       darkMode: "🌙 Dark Mode",
     },
     hero: {
-      title: "AI for Bharat",
-      subtitle: "AI-powered multilingual scholarship discovery platform",
+      title: "Find Scholarships Instantly with AI",
+      subtitle: "JnanaNet helps students discover government and private scholarships using multilingual AI.",
       askAi: "Ask AI",
       checkEligibility: "Check Eligibility",
     },
@@ -163,7 +163,7 @@ const translations = {
       darkMode: "🌙 डार्क मोड",
     },
     hero: {
-      title: "AI for Bharat",
+      title: "Find Scholarships Instantly with AI",
       subtitle: "AI आधारित बहुभाषी छात्रवृत्ति खोज मंच",
       askAi: "AI से पूछें",
       checkEligibility: "पात्रता जांचें",
@@ -270,7 +270,7 @@ const translations = {
       darkMode: "🌙 டார்க் மோடு",
     },
     hero: {
-      title: "AI for Bharat",
+      title: "Find Scholarships Instantly with AI",
       subtitle: "AI மூலம் பல்மொழி கல்வியுதவி கண்டறியும் தளம்",
       askAi: "AIயிடம் கேள்",
       checkEligibility: "தகுதி பார்க்க",
@@ -377,7 +377,7 @@ const translations = {
       darkMode: "🌙 డార్క్ మోడ్",
     },
     hero: {
-      title: "AI for Bharat",
+      title: "Find Scholarships Instantly with AI",
       subtitle: "AI ఆధారిత బహుభాషా స్కాలర్‌షిప్ డిస్కవరీ ప్లాట్‌ఫారం",
       askAi: "AI ని అడుగు",
       checkEligibility: "అర్హత చూడండి",
@@ -750,8 +750,64 @@ const faqData = [
   },
 ];
 
+const buildLocalizedFaq = (localizedEntries) =>
+  faqData.map((item, index) => localizedEntries[index] || item);
+
+const faqDataByLanguage = {
+  en: faqData,
+  hi: buildLocalizedFaq([
+    {
+      question: "इस स्कॉलरशिप पोर्टल का उद्देश्य क्या है?",
+      answer: "यह पोर्टल छात्रों को सरकारी, निजी और फाउंडेशन स्कॉलरशिप खोजने और आधिकारिक वेबसाइट तक पहुँचने में मदद करता है।",
+    },
+    {
+      question: "क्या मैं इस वेबसाइट पर सीधे आवेदन कर सकता/सकती हूँ?",
+      answer: "नहीं। आवेदन आधिकारिक पोर्टल पर किया जाता है; यहाँ भरोसेमंद जानकारी और लिंक मिलते हैं।",
+    },
+    {
+      question: "इस वेबसाइट का उपयोग कौन कर सकता है?",
+      answer: "स्कॉलरशिप खोजने वाला कोई भी छात्र इस पोर्टल का उपयोग कर सकता है।",
+    },
+  ]),
+  ta: buildLocalizedFaq([
+    {
+      question: "இந்த கல்வியுதவி தளத்தின் நோக்கம் என்ன?",
+      answer: "இந்த தளம் மாணவர்கள் கல்வியுதவிகளை கண்டுபிடித்து அதிகாரப்பூர்வ தளத்திற்குச் செல்ல உதவுகிறது.",
+    },
+    {
+      question: "இந்த இணையதளத்தில் நேரடியாக விண்ணப்பிக்க முடியுமா?",
+      answer: "இல்லை. விண்ணப்பம் அதிகாரப்பூர்வ தளத்தில் செய்ய வேண்டும்; இங்கு தகவல் மற்றும் இணைப்புகள் வழங்கப்படுகின்றன.",
+    },
+    {
+      question: "இந்த தளத்தை யார் பயன்படுத்தலாம்?",
+      answer: "கல்வியுதவி தேடும் எந்த மாணவரும் பயன்படுத்தலாம்.",
+    },
+  ]),
+  te: buildLocalizedFaq([
+    {
+      question: "ఈ స్కాలర్‌షిప్ పోర్టల్ లక్ష్యం ఏమిటి?",
+      answer: "ఈ పోర్టల్ విద్యార్థులు స్కాలర్‌షిప్‌లను కనుగొని అధికారిక దరఖాస్తు వెబ్‌సైట్‌కు వెళ్లేందుకు సహాయం చేస్తుంది.",
+    },
+    {
+      question: "ఈ వెబ్‌సైట్‌లోనే నేరుగా దరఖాస్తు చేయవచ్చా?",
+      answer: "లేదు. ఇక్కడ విశ్వసనీయ సమాచారం మరియు లింకులు ఉంటాయి; దరఖాస్తు అధికారిక పోర్టల్‌లో చేయాలి.",
+    },
+    {
+      question: "ఈ వెబ్‌సైట్‌ను ఎవరు ఉపయోగించవచ్చు?",
+      answer: "స్కాలర్‌షిప్‌ల కోసం వెతుకుతున్న ఏ విద్యార్థైనా ఈ పోర్టల్‌ను ఉపయోగించవచ్చు.",
+    },
+  ]),
+};
+
+const faqLanguageMap = {
+  English: "en",
+  Hindi: "hi",
+  Tamil: "ta",
+  Telugu: "te",
+};
+
 function App() {
-  const [activePage, setActivePage] = useState("home");
+  const [activePage, setActivePage] = useState("dashboard");
   const [miracleMode, setMiracleMode] = useState(false);
   const [themeMode, setThemeMode] = useState("dark");
   const [language, setLanguage] = useState("English");
@@ -761,6 +817,7 @@ function App() {
   const [voiceMode, setVoiceMode] = useState(false);
   const [faqSearch, setFaqSearch] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [selectedApplyScholarship, setSelectedApplyScholarship] = useState(null);
 
   const [eligibilityForm, setEligibilityForm] = useState({
     percentage: "",
@@ -910,6 +967,10 @@ function App() {
   }, [authUser]);
 
   useEffect(() => {
+    setOpenFaqIndex(null);
+  }, [faqSearch, language]);
+
+  useEffect(() => {
     let isMounted = true;
 
     const fetchScholarships = async () => {
@@ -963,6 +1024,19 @@ function App() {
       window.removeEventListener("hashchange", syncRouteToPage);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const scholarshipName = params.get("scholarship");
+    if (!scholarshipName) return;
+
+    const sourceScholarships = scholarshipCatalog.length > 0 ? scholarshipCatalog : fallbackScholarships;
+    const foundScholarship = sourceScholarships.find((item) => item.name === scholarshipName);
+    if (foundScholarship) {
+      setSelectedApplyScholarship(foundScholarship);
+    }
+  }, [scholarshipCatalog]);
 
   const updateEligibilityForm = (field, value) => {
     setEligibilityForm((prev) => ({ ...prev, [field]: value }));
@@ -1022,6 +1096,7 @@ function App() {
       id: generatedId,
       name: applicationForm.fullName,
       course: eligibilityForm.course,
+      scholarshipName: selectedApplyScholarship?.name || "Not specified",
       submittedAt: new Date().toLocaleString(),
       status: "Submitted",
     };
@@ -1137,6 +1212,22 @@ function App() {
   };
 
   const getScholarshipSource = () => (scholarshipCatalog.length > 0 ? scholarshipCatalog : fallbackScholarships);
+
+  const openApplyPage = (scholarship) => {
+    // Pass scholarship selection to Apply page and persist in URL query.
+    setSelectedApplyScholarship(scholarship || null);
+    setActivePage("apply");
+
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (scholarship?.name) {
+        url.searchParams.set("scholarship", scholarship.name);
+      } else {
+        url.searchParams.delete("scholarship");
+      }
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   const isSavedScholarship = (scholarshipId) => savedScholarships.includes(scholarshipId);
 
@@ -1254,7 +1345,9 @@ function App() {
 
   const handleLogout = () => {
     setAuthUser(null);
-    setActivePage("home");
+    setAuthMode("login");
+    setAuthMessage("");
+    setActivePage("auth");
   };
 
   const getNotificationItems = () => {
@@ -1499,7 +1592,7 @@ function App() {
           <div className="hero-overlay-orb secondary" />
 
           <div className="hero-content">
-            <span className="hero-badge">Moonlight AI / Miracle Mode</span>
+            <span className="hero-badge">🚀 Built for AI for Bharat Hackathon 2026</span>
             <h1 className="hero-title">{t.hero.title}</h1>
             <p className="hero-subtitle">{t.hero.subtitle}</p>
             <div className="ai-banner">✨ AI analyzed your profile and found {scholarships.length} matching scholarships</div>
@@ -1532,7 +1625,7 @@ function App() {
                 <div className="scholarship-bottom">
                   <span>{scholarship.amount}</span>
                   <div className="scholarship-actions">
-                    <button className="apply-mini" onClick={() => setActivePage("apply")}>Apply</button>
+                    <button className="apply-mini" onClick={() => openApplyPage(scholarship)}>Apply</button>
                     <button className="explain-mini" onClick={() => askAssistant(`Explain ${scholarship.name} scholarship`)}>
                       Explain with AI
                     </button>
@@ -1751,7 +1844,7 @@ function App() {
                 : t.eligibility.notEligibleText}
             </p>
             {eligibilityResult && (
-              <button className="btn-glass" onClick={() => setActivePage("apply")}>{t.eligibility.applyNow}</button>
+              <button className="btn-glass" onClick={() => openApplyPage(selectedApplyScholarship)}>{t.eligibility.applyNow}</button>
             )}
           </div>
         )}
@@ -1763,6 +1856,17 @@ function App() {
     <section className="moon-section">
       <div className="glass form-shell">
         <h2>{t.apply.title}</h2>
+        {/* Scholarship context shown to user before filling the form. */}
+        <h3 id="scholarshipTitle" className="apply-scholarship-title">
+          Applying for: {selectedApplyScholarship?.name || "General Scholarship"}
+        </h3>
+        {selectedApplyScholarship && (
+          <div className="scholarship-info">
+            <p><strong>Scholarship:</strong> {selectedApplyScholarship.name}</p>
+            <p><strong>Amount:</strong> {selectedApplyScholarship.amount || "As per official portal"}</p>
+            <p><strong>Deadline:</strong> {selectedApplyScholarship.deadline || "Check official portal"}</p>
+          </div>
+        )}
         <p>
           {t.apply.subtitle} <span className="mandatory">*</span> {t.apply.andUpload}
         </p>
@@ -2036,13 +2140,16 @@ function App() {
   );
 
   const renderFaq = () => {
-    const filteredFaq = faqData.filter(
+    const selectedFaqLanguage = faqLanguageMap[language] || "en";
+    const localizedFaq = faqDataByLanguage[selectedFaqLanguage] || faqDataByLanguage.en;
+
+    const filteredFaq = localizedFaq.filter(
       (item) =>
         item.question.toLowerCase().includes(faqSearch.toLowerCase()) ||
         item.answer.toLowerCase().includes(faqSearch.toLowerCase())
     );
     const smartFaq = faqSearch.trim()
-      ? faqData.find(
+      ? localizedFaq.find(
         (item) =>
           item.question.toLowerCase().includes(faqSearch.toLowerCase()) ||
           faqSearch.toLowerCase().includes(item.question.toLowerCase())
@@ -2432,7 +2539,7 @@ function App() {
     return (
       <section className="moon-section">
         <div className="glass stories-shell dashboard-shell">
-          <h2>Welcome {authUser?.name || "Student"} 👋</h2>
+          <h2 id="welcome">Welcome back! {authUser?.name || "Student"} 👋</h2>
           <p>Personalized scholarship insights based on your profile.</p>
 
           <div className="dashboard-panel-grid">
@@ -2467,6 +2574,17 @@ function App() {
       </section>
     );
   };
+
+  if (!authUser) {
+    // Protected app gate: users must log in before accessing any page.
+    return (
+      <div className={`app-shell ${themeMode} ${miracleMode ? "miracle" : ""}`}>
+        <div className="starfield" />
+        <div className="demo-banner">{t.demoBanner}</div>
+        {renderAuth()}
+      </div>
+    );
+  }
 
   return (
     <div className={`app-shell ${themeMode} ${miracleMode ? "miracle" : ""}`}>

@@ -5,6 +5,11 @@
 }
 
 :root {
+  /* Theme primitives for better dark/light readability */
+  --bg-dark: #0f172a;
+  --text-dark: #e5e7eb;
+  --bg-light: #ffffff;
+  --text-light: #111827;
   --bg-deep: #050816;
   --bg-indigo: #0d1630;
   --bg-blue: #111c3d;
@@ -303,18 +308,24 @@ select {
   position: relative;
   z-index: 2;
   max-width: 760px;
+  display: grid;
+  gap: 12px;
 }
 
 .hero-title {
-  font-size: clamp(2rem, 5vw, 3.6rem);
+  font-size: clamp(2.3rem, 5.5vw, 4rem);
   font-weight: 900;
-  margin-bottom: 10px;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin-bottom: 0;
 }
 
 .hero-subtitle {
   color: var(--text-muted);
-  font-size: clamp(1rem, 2.3vw, 1.2rem);
-  margin-bottom: 20px;
+  font-size: clamp(1.05rem, 2.4vw, 1.2rem);
+  line-height: 1.65;
+  opacity: 0.9;
+  margin-bottom: 6px;
 }
 
 .hero-actions {
@@ -443,9 +454,28 @@ select {
 }
 
 .scholarship-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-5px);
   border-color: rgba(34, 211, 238, 0.95);
   box-shadow: 0 0 26px rgba(34, 211, 238, 0.3);
+  transition: 0.3s;
+}
+
+.apply-scholarship-title {
+  margin-bottom: 8px;
+  font-size: 1.05rem;
+}
+
+.scholarship-info {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.36);
+  padding: 12px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.scholarship-info p {
+  margin-bottom: 4px;
 }
 
 .portal-groups {
@@ -1519,6 +1549,12 @@ select {
     linear-gradient(135deg, #f8fbff, #edf3ff, #e8efff);
 }
 
+.app-shell.dark {
+  background: radial-gradient(circle at 20% 20%, #1a2a58 0%, transparent 30%),
+    radial-gradient(circle at 80% 10%, #132f69 0%, transparent 32%),
+    linear-gradient(135deg, var(--bg-deep), var(--bg-indigo), var(--bg-blue));
+}
+
 .app-shell.light .starfield {
   opacity: 0.35;
   filter: invert(1);
@@ -1570,6 +1606,34 @@ select {
 .app-shell.light .smart-faq {
   background: rgba(255, 255, 255, 0.9);
   color: #0f172a;
+}
+
+.app-shell.light .hero-title {
+  color: #0f172a !important;
+}
+
+.app-shell.light .hero-subtitle {
+  color: #334155 !important;
+  opacity: 0.95;
+}
+
+.app-shell.light .btn-neon {
+  color: #031225;
+}
+
+.app-shell.light .btn-glass,
+.app-shell.light .apply-mini,
+.app-shell.light .explain-mini {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.22);
+}
+
+.app-shell.light .assistant-shell,
+.app-shell.light .score-card,
+.app-shell.light .eligibility-shell,
+.app-shell.light .scholarship-card {
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .app-shell.light .bubble.assistant {
