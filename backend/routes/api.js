@@ -21,6 +21,229 @@ function resolveUploadedFile(req) {
   return req.files.find((file) => preferredFieldNames.has(file.fieldname)) || req.files[0];
 }
 
+function generateKeywordGuidance({ q, normalizedCourse, marksInsight, incomeInsight, scholarshipLines }) {
+  const guidanceCategories = [
+    {
+      keys: ["hello", "hi", "hey", "namaste"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+Hello! I am your JnanaNet scholarship assistant.
+
+2) How I can help
+I can guide you on scholarships, eligibility, documents, deadlines, education loans, and official portals.
+
+3) Try asking
+• "B.Tech scholarships for low-income students"
+• "What documents are needed for NSP?"
+• "Women scholarship options in India"
+`,
+    },
+    {
+      keys: ["b.tech", "btech", "engineering"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You asked about scholarships for ${normalizedCourse} / engineering students.
+
+2) Matching opportunities
+${scholarshipLines}
+
+3) Typical criteria
+• 60%+ academic score
+• family income criteria (often below ₹4–8 lakh)
+• valid academic and identity documents
+
+4) Profile considered
+• Academic score: ${marksInsight}
+• Family income: ${incomeInsight}
+`,
+    },
+    {
+      keys: ["government scholarship", "govt scholarship", "central scholarship", "state scholarship"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You are looking for government scholarship options.
+
+2) Recommended path
+• Start with National Scholarship Portal (NSP)
+• Check your state government scholarship portal
+• Verify scheme eligibility before applying
+
+3) Next step
+Keep Aadhaar, income certificate, and marksheets ready for faster application.
+`,
+    },
+    {
+      keys: ["low income", "income", "poor", "ews", "economically weaker"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You are asking about scholarships for low-income families.
+
+2) Guidance
+Many scholarships prioritize annual family income slabs such as ₹2.5 lakh, ₹4 lakh, or ₹6 lakh.
+
+3) What to prepare
+• Valid income certificate
+• Bank account in student name
+• Correct category and domicile details
+
+4) Profile considered
+• Family income: ${incomeInsight}
+`,
+    },
+    {
+      keys: ["eligibility", "eligible", "criteria", "can i apply"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You want to check scholarship eligibility.
+
+2) Main factors
+• Academic score threshold
+• Family income limit
+• Category / domicile / course / year
+
+3) Profile considered
+• Academic score: ${marksInsight}
+• Family income: ${incomeInsight}
+
+4) Next step
+Use the Eligibility Checker to see scheme-wise eligibility instantly.
+`,
+    },
+    {
+      keys: ["documents", "document", "certificate", "aadhaar", "bonafide"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You asked for scholarship document requirements.
+
+2) Common scholarship documents
+• Aadhaar Card
+• Income Certificate
+• Marksheet
+• Bonafide Certificate
+• Bank Passbook
+
+3) Next step
+Keep scanned copies ready in clear PDF/JPG format before applying.
+`,
+    },
+    {
+      keys: ["deadline", "last date", "closing", "apply date"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You asked about scholarship deadlines.
+
+2) Guidance
+Deadlines vary by scheme and portal. Always check official portal notices and avoid last-day submission.
+
+3) Best practice
+Apply at least 5–7 days before closing date to avoid document validation delays.
+`,
+    },
+    {
+      keys: ["loan", "education loan", "vidya lakshmi", "student loan"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You asked about education loan options.
+
+2) Guidance
+Use Vidya Lakshmi portal to compare banks, loan schemes, and application process.
+
+3) What to check
+• Interest rate and repayment terms
+• Moratorium period
+• Required collateral (if applicable)
+`,
+    },
+    {
+      keys: ["nsp", "national scholarship portal"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You asked about NSP (National Scholarship Portal).
+
+2) NSP guidance
+• Register with correct student details
+• Complete profile and upload valid documents
+• Track application status after institute verification
+
+3) Tip
+Ensure Aadhaar, bank details, and institute information are consistent.
+`,
+    },
+    {
+      keys: ["aicte", "pragati", "saksham"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You asked about AICTE scholarships.
+
+2) Common schemes
+• AICTE Pragati (for girl students in technical education)
+• AICTE Saksham (for specially-abled students)
+
+3) Next step
+Check official AICTE notifications for eligibility year, institute type, and required documents.
+`,
+    },
+    {
+      keys: ["minority scholarship", "minority", "pre matric", "post matric"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You are looking for minority scholarship support.
+
+2) Guidance
+Explore pre-matric, post-matric, and merit-cum-means schemes available through official portals.
+
+3) Prepare
+• Community/category proof (if required)
+• Income certificate
+• Academic records
+`,
+    },
+    {
+      keys: ["women scholarship", "girl scholarship", "female scholarship", "scholarship for girls"],
+      message: `
+AI Analysis of Your Query
+
+1) Understanding your request
+You are asking about scholarships for women/girl students.
+
+2) Guidance
+Look for schemes like AICTE Pragati and women-focused merit scholarships from trusted organizations.
+
+3) Next step
+Use your course, income, and marks details to shortlist and apply quickly.
+`,
+    },
+  ];
+
+  const matched = guidanceCategories.find((category) =>
+    category.keys.some((keyword) => q.includes(keyword))
+  );
+
+  return matched ? matched.message : "";
+}
+
 router.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -122,51 +345,15 @@ router.post("/guidance", async (req, res) => {
   const marksInsight = marks > 0 ? `${marks}%` : "Not provided";
   const incomeInsight = familyIncome > 0 ? `₹${Math.round(familyIncome).toLocaleString("en-IN")}` : "Not provided";
 
-  let answer = "";
+  let answer = generateKeywordGuidance({
+    q,
+    normalizedCourse,
+    marksInsight,
+    incomeInsight,
+    scholarshipLines,
+  });
 
-  if (q.includes("b.tech") || q.includes("btech") || q.includes("scholarship")) {
-    answer = `
-AI Analysis of Your Query
-
-1) Understanding your request
-You asked about scholarships for ${normalizedCourse} students.
-
-2) Matching opportunities
-Based on your profile and common eligibility criteria, these scholarships are suitable:
-
-${scholarshipLines}
-
-3) Why these match
-Most B.Tech scholarships require:
-• 60%+ academic score
-• family income below ₹4–6 lakh
-• valid Aadhaar and bank account
-
-Profile considered:
-• Academic score: ${marksInsight}
-• Family income: ${incomeInsight}
-
-4) Next step
-Use the Eligibility Checker to estimate your approval chances.
-`;
-  } else if (q.includes("documents")) {
-    answer = `
-AI Analysis of Your Query
-
-1) Understanding your request
-You asked for scholarship document requirements.
-
-2) Common scholarship documents
-• Aadhaar Card
-• Income Certificate
-• Marksheet
-• Bonafide Certificate
-• Bank Passbook
-
-3) Next step
-Keep scanned copies ready in PDF/JPG format before applying.
-`;
-  } else {
+  if (!answer) {
     answer = `
 AI Analysis of Your Query
 

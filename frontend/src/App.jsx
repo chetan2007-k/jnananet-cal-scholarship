@@ -918,9 +918,11 @@ function App() {
   const [faqSearch, setFaqSearch] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [selectedApplyScholarship, setSelectedApplyScholarship] = useState(null);
-  const [moreNavSelection, setMoreNavSelection] = useState("");
+  const [isMoreDropdownOpen, setIsMoreDropdownOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileMenuRef = useRef(null);
+  const moreMenuRef = useRef(null);
 
   const [eligibilityForm, setEligibilityForm] = useState({
     percentage: "",
@@ -1028,6 +1030,7 @@ function App() {
     familyIncome: "",
   });
   const [authMessage, setAuthMessage] = useState("");
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [typedAuthSubtitle, setTypedAuthSubtitle] = useState("");
   const [studentProfileForm, setStudentProfileForm] = useState(defaultStudentProfile);
   const [profileStatus, setProfileStatus] = useState("");
@@ -1093,6 +1096,12 @@ function App() {
   }, [authUser]);
 
   useEffect(() => {
+    if (authMode === "forgot") {
+      setShowAuthPassword(false);
+    }
+  }, [authMode]);
+
+  useEffect(() => {
     if (!authUser) {
       setStudentProfileForm(defaultStudentProfile);
       return;
@@ -1121,6 +1130,10 @@ function App() {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileDropdownOpen(false);
       }
+
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
+        setIsMoreDropdownOpen(false);
+      }
     };
 
     if (typeof window !== "undefined") {
@@ -1136,6 +1149,8 @@ function App() {
 
   useEffect(() => {
     setIsProfileDropdownOpen(false);
+    setIsMoreDropdownOpen(false);
+    setIsMobileNavOpen(false);
   }, [activePage]);
 
   useEffect(() => {
@@ -1714,7 +1729,6 @@ function App() {
   const handleMoreNavigation = (value) => {
     if (!value) return;
     setActivePage(value);
-    setMoreNavSelection("");
   };
 
   const getNotificationItems = () => {
@@ -2756,20 +2770,35 @@ function App() {
 
   const renderSuccessStories = () => (
     <section className="moon-section">
-      <div className="glass stories-shell">
+      <div className="glass stories-shell stories-showcase-shell">
         <h2>{t.stories.title}</h2>
         <p>{t.stories.subtitle}</p>
 
         <div className="stories-grid">
-          {successStories.map((story) => (
-            <article className="story-glass" key={story.name}>
-              <h3>🎓 {story.name}</h3>
-              <p>
-                {t.stories.received} <strong>{story.amount}</strong> {story.scholarship}
-              </p>
-              <blockquote>“{story.quote}”</blockquote>
+          {successStories.map((story, index) => {
+            const storyInitial = story.name?.trim()?.charAt(0)?.toUpperCase() || "S";
+            const storyLocations = ["Andhra Pradesh", "Telangana", "Tamil Nadu"];
+            const storyLocation = storyLocations[index % storyLocations.length];
+
+            return (
+            <article className="story-glass success-story-card" key={story.name}>
+              <div className="story-head">
+                <div className="story-avatar" aria-hidden="true">{storyInitial}</div>
+                <div className="story-meta">
+                  <h3>{story.name}</h3>
+                  <p className="story-location">📍 {storyLocation}</p>
+                </div>
+              </div>
+
+              <div className="story-scholarship-row">
+                <span className="story-scholarship-badge">{story.scholarship}</span>
+                <p className="story-amount-text">{t.stories.received} <strong>{story.amount}</strong></p>
+              </div>
+
+              <blockquote className="story-quote">“{story.quote}”</blockquote>
             </article>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -3078,22 +3107,46 @@ function App() {
 
   const renderSupport = () => (
     <section className="moon-section">
-      <div className="glass stories-shell support-shell">
-        <h2>Raise Support Ticket</h2>
+      <div className="glass stories-shell support-shell support-dashboard-shell">
+        <div className="panel-header-row">
+          <h2>Raise Support Ticket</h2>
+          <span className="panel-sub-badge">Student Help Desk</span>
+        </div>
         <p>If AI cannot solve your issue, submit a ticket and our team will assist you.</p>
 
-        <form className="support-form" onSubmit={submitSupportTicket}>
+        <form className="support-form support-ticket-form" onSubmit={submitSupportTicket}>
+          <div className="ticket-user-meta">
+            <div className="ticket-meta-chip">
+              <span className="meta-label">Student Name</span>
+              <strong>{authUser?.name || "Guest User"}</strong>
+            </div>
+            <div className="ticket-meta-chip">
+              <span className="meta-label">Email</span>
+              <strong>{authUser?.email || "guest@jnananet.local"}</strong>
+            </div>
+          </div>
+
+          <div className="ticket-form-grid">
+            <label>
+              Issue Category
+              <input
+                type="text"
+                value={ticketForm.subject}
+                onChange={(event) => handleTicketInput("subject", event.target.value)}
+                placeholder="Unable to upload income certificate"
+              />
+            </label>
+            <label>
+              Upload Screenshot
+              <input
+                type="file"
+                onChange={(event) => handleTicketInput("screenshotName", event.target.files?.[0]?.name || "")}
+              />
+            </label>
+          </div>
+
           <label>
-            Subject
-            <input
-              type="text"
-              value={ticketForm.subject}
-              onChange={(event) => handleTicketInput("subject", event.target.value)}
-              placeholder="Unable to upload income certificate"
-            />
-          </label>
-          <label>
-            Description
+            Message
             <textarea
               rows="5"
               value={ticketForm.description}
@@ -3101,14 +3154,8 @@ function App() {
               placeholder="Portal shows error while uploading document"
             />
           </label>
-          <label>
-            Upload Screenshot
-            <input
-              type="file"
-              onChange={(event) => handleTicketInput("screenshotName", event.target.files?.[0]?.name || "")}
-            />
-          </label>
-          <button className="btn-neon" type="submit">Submit Ticket</button>
+
+          <button className="btn-neon support-submit-btn" type="submit">Submit Ticket</button>
           {ticketStatus && <p className="contact-status ok">{ticketStatus}</p>}
         </form>
       </div>
@@ -3117,18 +3164,33 @@ function App() {
 
   const renderAdminTickets = () => (
     <section className="moon-section">
-      <div className="glass stories-shell">
-        <h2>Admin Ticket Panel</h2>
+      <div className="glass stories-shell admin-ticket-shell">
+        <div className="panel-header-row">
+          <h2>Admin Support Tickets</h2>
+          <span className="panel-sub-badge">Total: {supportTickets.length}</span>
+        </div>
         <p>View all support tickets raised by users.</p>
 
-        <div className="ticket-list">
+        <div className="ticket-list admin-ticket-list">
           {supportTickets.length === 0 && <p>No tickets raised yet.</p>}
           {supportTickets.map((ticket) => (
-            <article className="ticket-card" key={ticket.id}>
-              <h4>{ticket.subject}</h4>
-              <p>{ticket.description}</p>
-              <small>{ticket.id} • {ticket.createdAt} • {ticket.raisedBy}</small>
-              <p>Screenshot: {ticket.screenshotName}</p>
+            <article className="ticket-card admin-ticket-card" key={ticket.id}>
+              <header className="ticket-card-head">
+                <h4>{ticket.id}</h4>
+                <span className={`status-pill ${String(ticket.status).toLowerCase() === "resolved" ? "resolved" : "open"}`}>
+                  {ticket.status || "Open"}
+                </span>
+              </header>
+
+              <div className="ticket-info-grid">
+                <p><strong>Student Name:</strong> {ticket.studentName || "Student"}</p>
+                <p><strong>Email:</strong> {ticket.email || ticket.raisedBy || "Not provided"}</p>
+                <p><strong>Issue Category:</strong> {ticket.subject || "General"}</p>
+                <p><strong>Date Submitted:</strong> {ticket.createdAt || "Not available"}</p>
+              </div>
+
+              <p className="ticket-message"><strong>Message:</strong> {ticket.description}</p>
+              <p className="ticket-screenshot"><strong>Screenshot:</strong> {ticket.screenshotName}</p>
             </article>
           ))}
         </div>
@@ -3189,7 +3251,21 @@ function App() {
             {authMode !== "forgot" && (
               <label>
                 Password
-                <input type="password" value={authForm.password} onChange={(event) => handleAuthInput("password", event.target.value)} />
+                <div className="password-field">
+                  <input
+                    type={showAuthPassword ? "text" : "password"}
+                    value={authForm.password}
+                    onChange={(event) => handleAuthInput("password", event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    aria-label={showAuthPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowAuthPassword((prev) => !prev)}
+                  >
+                    <i className={`fa-solid ${showAuthPassword ? "fa-eye-slash" : "fa-eye"}`} aria-hidden="true"></i>
+                  </button>
+                </div>
               </label>
             )}
 
@@ -3248,47 +3324,79 @@ function App() {
       return acc;
     }, {});
     const applicationStatuses = Object.entries(statusCounts);
+    const dashboardScore = eligibilityScore || 87;
 
     return (
       <section className="moon-section">
-        <div className="glass stories-shell dashboard-shell">
-          <h2 id="welcome">Welcome back! {studentDisplayName} 👋</h2>
-          <p>Personalized scholarship insights based on your profile.</p>
+        <div className="glass stories-shell dashboard-shell dashboard-modern-shell">
+          <div className="dashboard-welcome">
+            <h2 id="welcome">Welcome back, {studentDisplayName} 👋</h2>
+            <p className="dashboard-subtitle">AI-personalized scholarship insights based on your profile.</p>
+          </div>
+
+          <article className="dashboard-ai-insight">
+            <h3>🤖 AI Insight</h3>
+            <p>Students with similar academic profiles received scholarships between ₹50,000 – ₹1,00,000.</p>
+          </article>
 
           <div className="dashboard-panel-grid">
-            <article className="dashboard-panel">
-              <h3>Recommended Scholarships</h3>
-              {recommendations.map((item) => (
-                <p key={item.id}>✔ {item.name}</p>
-              ))}
+            <article className="dashboard-panel dashboard-feature-card">
+              <div className="dashboard-card-header">
+                <h3>🎓 Recommended Scholarships</h3>
+              </div>
+              <div className="dashboard-list">
+                {recommendations.map((item) => (
+                  <p className="dashboard-list-item" key={item.id}>✅ {item.name}</p>
+                ))}
+              </div>
+              <button className="dashboard-view-all" type="button" onClick={() => setActivePage("home")}>View All</button>
             </article>
 
-            <article className="dashboard-panel">
+            <article className="dashboard-panel dashboard-feature-card eligibility-card">
               <h3>Your Eligibility Score</h3>
-              <p className="metric">{eligibilityScore || 87}%</p>
+              <p className="metric">{dashboardScore}%</p>
+              <div className="eligibility-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={dashboardScore}>
+                <div className="eligibility-progress-fill" style={{ width: `${Math.min(Math.max(dashboardScore, 0), 100)}%` }} />
+              </div>
+              <button className="dashboard-view-all" type="button" onClick={() => setActivePage("eligibility")}>View All</button>
             </article>
 
-            <article className="dashboard-panel">
-              <h3>Saved Scholarships</h3>
-              {savedItems.length === 0 && <p>No saved scholarships yet.</p>}
-              {savedItems.map((item) => (
-                <p key={item.id}>✔ {item.name}</p>
-              ))}
+            <article className="dashboard-panel dashboard-feature-card">
+              <div className="dashboard-card-header">
+                <h3>⭐ Saved Scholarships</h3>
+              </div>
+              {savedItems.length === 0 && <p className="dashboard-empty">No saved scholarships yet.</p>}
+              <div className="dashboard-list">
+                {savedItems.map((item) => (
+                  <p className="dashboard-list-item" key={item.id}>✅ {item.name}</p>
+                ))}
+              </div>
+              <button className="dashboard-view-all" type="button" onClick={() => setActivePage("saved")}>View All</button>
             </article>
 
-            <article className="dashboard-panel">
-              <h3>Applications Status</h3>
-              {applicationStatuses.length === 0 && <p>No scholarship applications yet.</p>}
-              {applicationStatuses.map(([status, count]) => (
-                <p key={status}>✔ {status}: {count}</p>
-              ))}
+            <article className="dashboard-panel dashboard-feature-card">
+              <div className="dashboard-card-header">
+                <h3>📄 Applications Status</h3>
+              </div>
+              {applicationStatuses.length === 0 && <p className="dashboard-empty">No scholarship applications yet.</p>}
+              <div className="dashboard-list">
+                {applicationStatuses.map(([status, count]) => (
+                  <p className="dashboard-list-item" key={status}>✅ {status}: <strong>{count}</strong></p>
+                ))}
+              </div>
+              <button className="dashboard-view-all" type="button" onClick={() => setActivePage("track")}>View All</button>
             </article>
 
-            <article className="dashboard-panel">
-              <h3>Upcoming Deadlines</h3>
-              {upcomingDeadlines.map((item) => (
-                <p key={item.id}>{item.name} – {item.deadline}</p>
-              ))}
+            <article className="dashboard-panel dashboard-feature-card">
+              <div className="dashboard-card-header">
+                <h3>⏰ Upcoming Deadlines</h3>
+              </div>
+              <div className="dashboard-list">
+                {upcomingDeadlines.map((item) => (
+                  <p className="dashboard-list-item" key={item.id}>✅ {item.name} – {item.deadline}</p>
+                ))}
+              </div>
+              <button className="dashboard-view-all" type="button" onClick={() => setActivePage("notifications")}>View All</button>
             </article>
           </div>
         </div>
@@ -3415,6 +3523,7 @@ function App() {
   );
 
   const studentDisplayName = studentProfileForm.fullName || authUser?.name || "Student";
+  const studentInitial = String(studentDisplayName).trim().charAt(0).toUpperCase() || "S";
 
   const renderSupportChatWidget = () => (
     <>
@@ -3488,71 +3597,100 @@ function App() {
       <div className="demo-banner">{t.demoBanner}</div>
 
       <nav className="top-nav glass">
-        <div className="brand">JnanaNet</div>
-        <div className="nav-links">
-          <button className={`nav-btn ${activePage === "dashboard" ? "active" : ""}`} onClick={() => setActivePage("dashboard")}>{t.nav.home}</button>
-          <button className={`nav-btn ${activePage === "home" ? "active" : ""}`} onClick={() => setActivePage("home")}>Scholarships</button>
-          <button className={`nav-btn ${activePage === "aiassistant" ? "active" : ""}`} onClick={() => setActivePage("aiassistant")}>{t.nav.assistant}</button>
-          <button className={`nav-btn ${activePage === "track" ? "active" : ""}`} onClick={() => setActivePage("track")}>Track Applications</button>
-          <button className={`nav-btn ${activePage === "stories" ? "active" : ""}`} onClick={() => setActivePage("stories")}>{t.nav.stories}</button>
-          <button className={`nav-btn ${activePage === "faq" ? "active" : ""}`} onClick={() => setActivePage("faq")}>{t.nav.faq}</button>
-          <select
-            className="nav-more-select"
-            value={moreNavSelection}
-            onChange={(event) => handleMoreNavigation(event.target.value)}
-          >
-            <option value="">More</option>
-            <option value="eligibility">Eligibility</option>
-            <option value="apply">Apply</option>
-            <option value="saved">Saved</option>
-            <option value="notifications">Notifications</option>
-            <option value="support">Support</option>
-            <option value="admin">Admin</option>
-            <option value="portals">Portals</option>
-            <option value="contact">Contact</option>
-          </select>
+        <div className="nav-left">
+          <div className="brand">JnanaNet</div>
         </div>
-        <div className="nav-actions">
-          <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-            <option>English</option>
-            <option>Tamil</option>
-            <option>Telugu</option>
-            <option>Hindi</option>
-          </select>
-          <button
-            className="theme-toggle"
-            onClick={() => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))}
-          >
-            {themeMode === "dark" ? t.nav.lightMode : t.nav.darkMode}
-          </button>
-          <label className="miracle-toggle">
-            {t.nav.miracleMode}
-            <input
-              type="checkbox"
-              checked={miracleMode}
-              onChange={() => setMiracleMode(!miracleMode)}
-            />
-          </label>
-          <div className="profile-menu" ref={profileMenuRef}>
-            <button
-              className="profile-icon"
-              onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
-              aria-label="Open profile menu"
-              aria-expanded={isProfileDropdownOpen}
-            >
-              👤
-            </button>
-            <span className="profile-name-label">👤 {studentDisplayName}</span>
 
-            {isProfileDropdownOpen && (
-              <div id="profileDropdown" className="profile-dropdown">
-                <button type="button" onClick={() => navigateFromProfileMenu("dashboard")}>Dashboard</button>
-                <button type="button" onClick={() => navigateFromProfileMenu("profile")}>My Profile</button>
-                <button type="button" onClick={() => navigateFromProfileMenu("track")}>My Applications</button>
-                <button type="button" onClick={() => navigateFromProfileMenu("saved")}>Saved Scholarships</button>
-                <button type="button" onClick={handleLogout}>Logout</button>
+        <button
+          className="nav-mobile-toggle"
+          type="button"
+          onClick={() => setIsMobileNavOpen((prev) => !prev)}
+          aria-label="Toggle navigation menu"
+          aria-expanded={isMobileNavOpen}
+        >
+          {isMobileNavOpen ? "✕" : "☰"}
+        </button>
+
+        <div className={`nav-collapsible ${isMobileNavOpen ? "open" : ""}`}>
+          <div className="nav-center">
+            <div className="nav-links">
+              <button className={`nav-btn ${activePage === "dashboard" ? "active" : ""}`} onClick={() => setActivePage("dashboard")}>{t.nav.home}</button>
+              <button className={`nav-btn ${activePage === "home" ? "active" : ""}`} onClick={() => setActivePage("home")}>Scholarships</button>
+              <button className={`nav-btn ${activePage === "aiassistant" ? "active" : ""}`} onClick={() => setActivePage("aiassistant")}>{t.nav.assistant}</button>
+              <button className={`nav-btn ${activePage === "track" ? "active" : ""}`} onClick={() => setActivePage("track")}>Track Applications</button>
+              <button className={`nav-btn ${activePage === "stories" ? "active" : ""}`} onClick={() => setActivePage("stories")}>{t.nav.stories}</button>
+              <button className={`nav-btn ${activePage === "faq" ? "active" : ""}`} onClick={() => setActivePage("faq")}>{t.nav.faq}</button>
+
+              <div className="more-menu" ref={moreMenuRef}>
+                <button
+                  className={`nav-btn more-btn ${isMoreDropdownOpen ? "active" : ""}`}
+                  type="button"
+                  onClick={() => setIsMoreDropdownOpen((prev) => !prev)}
+                  aria-label="Open more navigation menu"
+                  aria-expanded={isMoreDropdownOpen}
+                >
+                  More ▾
+                </button>
+
+                {isMoreDropdownOpen && (
+                  <div className="more-dropdown">
+                    <button type="button" className={activePage === "eligibility" ? "active" : ""} onClick={() => handleMoreNavigation("eligibility")}>Eligibility</button>
+                    <button type="button" className={activePage === "apply" ? "active" : ""} onClick={() => handleMoreNavigation("apply")}>Apply</button>
+                    <button type="button" className={activePage === "saved" ? "active" : ""} onClick={() => handleMoreNavigation("saved")}>Saved</button>
+                    <button type="button" className={activePage === "notifications" ? "active" : ""} onClick={() => handleMoreNavigation("notifications")}>Notifications</button>
+                    <button type="button" className={activePage === "support" ? "active" : ""} onClick={() => handleMoreNavigation("support")}>Support</button>
+                    <button type="button" className={activePage === "admin" ? "active" : ""} onClick={() => handleMoreNavigation("admin")}>Admin</button>
+                    <button type="button" className={activePage === "portals" ? "active" : ""} onClick={() => handleMoreNavigation("portals")}>Portals</button>
+                    <button type="button" className={activePage === "contact" ? "active" : ""} onClick={() => handleMoreNavigation("contact")}>Contact</button>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          </div>
+
+          <div className="nav-right nav-actions">
+            <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+              <option>English</option>
+              <option>Tamil</option>
+              <option>Telugu</option>
+              <option>Hindi</option>
+            </select>
+            <button
+              className="theme-toggle"
+              onClick={() => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))}
+            >
+              {themeMode === "dark" ? t.nav.lightMode : t.nav.darkMode}
+            </button>
+            <label className="miracle-toggle">
+              {t.nav.miracleMode}
+              <input
+                type="checkbox"
+                checked={miracleMode}
+                onChange={() => setMiracleMode(!miracleMode)}
+              />
+            </label>
+
+            <div className="profile-menu" ref={profileMenuRef}>
+              <button
+                className="profile-icon"
+                onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
+                aria-label="Open profile menu"
+                aria-expanded={isProfileDropdownOpen}
+              >
+                {studentInitial}
+              </button>
+              <span className="profile-name-label">{studentDisplayName}</span>
+
+              {isProfileDropdownOpen && (
+                <div id="profileDropdown" className="profile-dropdown">
+                  <button className={activePage === "dashboard" ? "active" : ""} type="button" onClick={() => navigateFromProfileMenu("dashboard")}>Dashboard</button>
+                  <button className={activePage === "profile" ? "active" : ""} type="button" onClick={() => navigateFromProfileMenu("profile")}>My Profile</button>
+                  <button className={activePage === "track" ? "active" : ""} type="button" onClick={() => navigateFromProfileMenu("track")}>My Applications</button>
+                  <button className={activePage === "saved" ? "active" : ""} type="button" onClick={() => navigateFromProfileMenu("saved")}>Saved Scholarships</button>
+                  <button type="button" onClick={handleLogout}>Logout</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </nav>
