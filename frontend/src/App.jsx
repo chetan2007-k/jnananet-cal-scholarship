@@ -908,7 +908,7 @@ const faqLanguageMap = {
 
 function App() {
   const [activePage, setActivePage] = useState("dashboard");
-  const [miracleMode, setMiracleMode] = useState(false);
+  const [miracleMode] = useState(true);
   const [themeMode, setThemeMode] = useState("dark");
   const [language, setLanguage] = useState("English");
   const t = translations[language] || translations.English;
@@ -3523,7 +3523,8 @@ function App() {
   );
 
   const studentDisplayName = studentProfileForm.fullName || authUser?.name || "Student";
-  const studentInitial = String(studentDisplayName).trim().charAt(0).toUpperCase() || "S";
+  const navProfileName = "Chetan";
+  const studentInitial = "C";
 
   const renderSupportChatWidget = () => (
     <>
@@ -3661,14 +3662,6 @@ function App() {
             >
               {themeMode === "dark" ? t.nav.lightMode : t.nav.darkMode}
             </button>
-            <label className="miracle-toggle">
-              {t.nav.miracleMode}
-              <input
-                type="checkbox"
-                checked={miracleMode}
-                onChange={() => setMiracleMode(!miracleMode)}
-              />
-            </label>
 
             <div className="profile-menu" ref={profileMenuRef}>
               <button
@@ -3679,7 +3672,7 @@ function App() {
               >
                 {studentInitial}
               </button>
-              <span className="profile-name-label">{studentDisplayName}</span>
+              <span className="profile-name-label">{navProfileName}</span>
 
               {isProfileDropdownOpen && (
                 <div id="profileDropdown" className="profile-dropdown">

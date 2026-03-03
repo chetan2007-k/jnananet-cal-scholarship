@@ -114,7 +114,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 14px;
   background: rgba(15, 23, 42, 0.48);
   border-color: rgba(148, 163, 184, 0.3);
 }
@@ -140,7 +140,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
+  min-width: 0;
 }
 
 .nav-mobile-toggle {
@@ -167,16 +168,23 @@ body {
 .nav-links {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 8px;
   flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav-links::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-links button {
   border: 1px solid rgba(148, 163, 184, 0.28);
   background: rgba(15, 23, 42, 0.5);
   color: var(--text-main);
-  padding: 9px 14px;
+  padding: 8px 12px;
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.25s ease;
@@ -200,7 +208,7 @@ body {
 }
 
 .more-btn {
-  min-width: 84px;
+  min-width: 78px;
 }
 
 .more-dropdown {
@@ -246,6 +254,7 @@ body {
   align-items: center;
   gap: 8px;
   flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 .profile-menu {
@@ -275,7 +284,7 @@ body {
   font-size: 13px;
   color: var(--text-main);
   font-weight: 700;
-  max-width: 120px;
+  max-width: 86px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -353,18 +362,6 @@ textarea {
 .nav-actions select,
 select {
   cursor: pointer;
-}
-
-.miracle-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-muted);
-  font-size: 12px;
-  padding: 7px 10px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.45);
 }
 
 .hero {
@@ -2871,6 +2868,7 @@ select {
   .nav-links {
     justify-content: flex-start;
     flex-wrap: wrap;
+    overflow-x: visible;
   }
 
   .nav-links,
