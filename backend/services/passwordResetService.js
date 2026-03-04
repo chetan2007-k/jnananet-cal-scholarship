@@ -66,10 +66,11 @@ function getTransporter() {
   if (transporter) return transporter;
 
   const smtpUser = process.env.SMTP_USER || OFFICIAL_EMAIL;
-  const smtpAppPassword = process.env.SMTP_APP_PASSWORD;
+  const smtpAppPassword = process.env.EMAIL_PASS || process.env.SMTP_APP_PASSWORD;
 
   if (!smtpAppPassword) {
-    throw new Error("SMTP_APP_PASSWORD is not configured for password reset email.");
+    console.error("Email sending failed: EMAIL_PASS/SMTP_APP_PASSWORD is not configured for password reset.");
+    return null;
   }
 
   transporter = nodemailer.createTransport({
@@ -165,12 +166,21 @@ Regards,
 JnanaNet Team
 ${OFFICIAL_EMAIL}`;
 
-  await transporterClient.sendMail({
-    from: `JnanaNet Team <${smtpUser}>`,
-    to: normalizedEmail,
-    subject: "JnanaNet Password Reset",
-    text: message,
-  });
+  try {
+    if (!transporterClient) return { sent: false };
+
+    await transporterClient.sendMail({
+      from: `JnanaNet Team <${smtpUser}>`,
+      to: normalizedEmail,
+      subject: "JnanaNet Password Reset",
+      text: message,
+    });
+
+    return { sent: true };
+  } catch (error) {
+    console.error("Email sending failed:", error);
+    return { sent: false };
+  }
 }
 
 async function resetPasswordWithToken({ email, token, newPassword }) {

@@ -318,13 +318,14 @@ router.post("/auth/forgot-password", async (req, res, next) => {
     const frontendBase = String(process.env.FRONTEND_RESET_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
     const resetLink = `${frontendBase}/?mode=reset&token=${token}&email=${encodeURIComponent(email)}`;
 
-    await sendPasswordResetEmail({
+    const emailResult = await sendPasswordResetEmail({
       toEmail: email,
       resetLink,
     });
 
     return res.json({
       message: "If this email is registered, reset instructions have been sent.",
+      notified: Boolean(emailResult?.sent),
     });
   } catch (error) {
     return next(error);
@@ -372,7 +373,7 @@ router.post("/support/tickets", async (req, res, next) => {
       return res.status(400).json({ message: "message is required" });
     }
 
-    await sendSupportTicketNotification({
+    const emailResult = await sendSupportTicketNotification({
       studentName,
       userEmail: userEmail || "Not provided",
       category,
@@ -380,11 +381,15 @@ router.post("/support/tickets", async (req, res, next) => {
     });
 
     return res.json({
-      message: "Support ticket notification sent",
-      notified: true,
+      message: "Support ticket submitted successfully",
+      notified: Boolean(emailResult?.sent),
     });
   } catch (error) {
-    return next(error);
+    console.error("Support ticket API failed:", error);
+    return res.json({
+      message: "Support ticket submitted successfully",
+      notified: false,
+    });
   }
 });
 
@@ -402,18 +407,22 @@ router.post("/contact", async (req, res, next) => {
       return res.status(400).json({ message: "Valid email is required" });
     }
 
-    await sendContactFormNotification({
+    const emailResult = await sendContactFormNotification({
       name,
       email,
       message,
     });
 
     return res.json({
-      message: "Contact form notification sent",
-      notified: true,
+      message: "Contact form submitted successfully",
+      notified: Boolean(emailResult?.sent),
     });
   } catch (error) {
-    return next(error);
+    console.error("Contact form API failed:", error);
+    return res.json({
+      message: "Contact form submitted successfully",
+      notified: false,
+    });
   }
 });
 

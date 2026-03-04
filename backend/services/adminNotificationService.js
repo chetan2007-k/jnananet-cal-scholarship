@@ -8,10 +8,11 @@ function getTransporter() {
   if (transporter) return transporter;
 
   const smtpUser = process.env.SMTP_USER || OFFICIAL_EMAIL;
-  const smtpPassword = process.env.SMTP_APP_PASSWORD;
+  const smtpPassword = process.env.EMAIL_PASS || process.env.SMTP_APP_PASSWORD;
 
   if (!smtpPassword) {
-    throw new Error("SMTP_APP_PASSWORD is not configured for admin email notifications.");
+    console.error("Email sending failed: EMAIL_PASS/SMTP_APP_PASSWORD is not configured for admin notifications.");
+    return null;
   }
 
   transporter = nodemailer.createTransport({
@@ -49,12 +50,22 @@ Please check the admin panel for more details.
 
 JnanaNet System Notification`;
 
-  await getTransporter().sendMail({
-    from: `JnanaNet Team <${smtpUser}>`,
-    to: adminEmail,
-    subject: "New Support Ticket – JnanaNet",
-    text,
-  });
+  try {
+    const mailClient = getTransporter();
+    if (!mailClient) return { sent: false };
+
+    await mailClient.sendMail({
+      from: `JnanaNet Team <${smtpUser}>`,
+      to: adminEmail,
+      subject: "New Support Ticket – JnanaNet",
+      text,
+    });
+
+    return { sent: true };
+  } catch (error) {
+    console.error("Email sending failed:", error);
+    return { sent: false };
+  }
 }
 
 async function sendContactFormNotification({
@@ -73,12 +84,22 @@ Message: ${message}
 
 Please review and respond if needed.`;
 
-  await getTransporter().sendMail({
-    from: `JnanaNet Team <${smtpUser}>`,
-    to: adminEmail,
-    subject: "New Contact Form Submission – JnanaNet",
-    text,
-  });
+  try {
+    const mailClient = getTransporter();
+    if (!mailClient) return { sent: false };
+
+    await mailClient.sendMail({
+      from: `JnanaNet Team <${smtpUser}>`,
+      to: adminEmail,
+      subject: "New Contact Form Submission – JnanaNet",
+      text,
+    });
+
+    return { sent: true };
+  } catch (error) {
+    console.error("Email sending failed:", error);
+    return { sent: false };
+  }
 }
 
 module.exports = {
