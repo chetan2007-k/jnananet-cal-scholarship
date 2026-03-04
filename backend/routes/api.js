@@ -4,6 +4,17 @@ const multer = require("multer");
 const scholarships = require("../data/scholarships");
 const { getRecommendations } = require("../services/recommendationService");
 const { uploadDocumentToS3 } = require("../services/s3UploadService");
+const {
+  sendSupportTicketNotification,
+  sendContactFormNotification,
+} = require("../services/adminNotificationService");
+const {
+  normalizeEmail,
+  createPasswordResetRequest,
+  sendPasswordResetEmail,
+  resetPasswordWithToken,
+  syncAccountPassword,
+} = require("../services/passwordResetService");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -19,6 +30,14 @@ function resolveUploadedFile(req) {
 
   const preferredFieldNames = new Set(["document", "file", "upload"]);
   return req.files.find((file) => preferredFieldNames.has(file.fieldname)) || req.files[0];
+}
+
+function isValidEmail(email = "") {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+}
+
+function sanitizeText(value = "") {
+  return String(value || "").trim();
 }
 
 function generateKeywordGuidance({ q, normalizedCourse, marksInsight, incomeInsight, scholarshipLines }) {
@@ -268,6 +287,134 @@ router.get("/scholarships/:id", (req, res) => {
   }
 
   return res.json({ scholarship });
+});
+
+router.post("/auth/sync-account", async (req, res, next) => {
+  try {
+    const email = req.body?.email;
+    const password = req.body?.password;
+    const name = req.body?.name || "";
+
+    if (!isValidEmail(email) || !String(password || "").trim()) {
+      return res.status(400).json({ message: "Valid email and password are required" });
+    }
+
+    await syncAccountPassword({ email, password, name });
+    return res.json({ message: "Account synced" });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/auth/forgot-password", async (req, res, next) => {
+  try {
+    const email = normalizeEmail(req.body?.email || "");
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Valid email is required" });
+    }
+
+    const token = await createPasswordResetRequest(email);
+    const frontendBase = String(process.env.FRONTEND_RESET_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
+    const resetLink = `${frontendBase}/?mode=reset&token=${token}&email=${encodeURIComponent(email)}`;
+
+    await sendPasswordResetEmail({
+      toEmail: email,
+      resetLink,
+    });
+
+    return res.json({
+      message: "If this email is registered, reset instructions have been sent.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/auth/reset-password", async (req, res, next) => {
+  try {
+    const email = normalizeEmail(req.body?.email || "");
+    const token = String(req.body?.token || "").trim();
+    const newPassword = String(req.body?.newPassword || "");
+
+    if (!isValidEmail(email) || !token || !newPassword) {
+      return res.status(400).json({ message: "email, token, and newPassword are required" });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: "New password must be at least 8 characters" });
+    }
+
+    const updated = await resetPasswordWithToken({
+      email,
+      token,
+      newPassword,
+    });
+
+    if (!updated) {
+      return res.status(400).json({ message: "Invalid or expired reset link" });
+    }
+
+    return res.json({ message: "Password reset successful" });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/support/tickets", async (req, res, next) => {
+  try {
+    const studentName = sanitizeText(req.body?.studentName || req.body?.name || "Student");
+    const userEmail = sanitizeText(req.body?.email || req.body?.raisedBy || "");
+    const category = sanitizeText(req.body?.category || req.body?.subject || "General");
+    const message = sanitizeText(req.body?.message || req.body?.description || "");
+
+    if (!message) {
+      return res.status(400).json({ message: "message is required" });
+    }
+
+    await sendSupportTicketNotification({
+      studentName,
+      userEmail: userEmail || "Not provided",
+      category,
+      message,
+    });
+
+    return res.json({
+      message: "Support ticket notification sent",
+      notified: true,
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/contact", async (req, res, next) => {
+  try {
+    const name = sanitizeText(req.body?.name || req.body?.fullName || "Visitor");
+    const email = sanitizeText(req.body?.email || "");
+    const message = sanitizeText(req.body?.message || "");
+
+    if (!name || !email || !message) {
+      return res.status(400).json({ message: "name, email, and message are required" });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Valid email is required" });
+    }
+
+    await sendContactFormNotification({
+      name,
+      email,
+      message,
+    });
+
+    return res.json({
+      message: "Contact form notification sent",
+      notified: true,
+    });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 router.post("/check-eligibility", (req, res) => {

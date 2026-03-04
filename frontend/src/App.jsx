@@ -1079,6 +1079,7 @@ function App() {
     }
   });
   const [authMode, setAuthMode] = useState("login");
+  const [resetToken, setResetToken] = useState("");
   const [authForm, setAuthForm] = useState({
     name: "",
     email: "",
@@ -1158,6 +1159,28 @@ function App() {
       setShowAuthPassword(false);
     }
   }, [authMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    const mode = url.searchParams.get("mode");
+    const token = String(url.searchParams.get("token") || "").trim();
+    const email = String(url.searchParams.get("email") || "").trim().toLowerCase();
+
+    if (mode === "reset" && token && email) {
+      setAuthUser(null);
+      setActivePage("auth");
+      setAuthMode("reset");
+      setResetToken(token);
+      setAuthForm((prev) => ({
+        ...prev,
+        email,
+        password: "",
+      }));
+      setAuthMessage("Please set your new password.");
+    }
+  }, []);
 
   useEffect(() => {
     if (!authUser) {
@@ -1760,7 +1783,49 @@ function App() {
     setAuthForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleAuthSubmit = (event) => {
+  const syncAccountWithBackend = async ({ email, password, name }) => {
+    try {
+      await fetch(`${API_BASE}/api/auth/sync-account`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name }),
+      });
+    } catch {
+      // Keep existing local auth flow even if backend sync is temporarily unavailable.
+    }
+  };
+
+  const clearResetQueryFromUrl = () => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("mode");
+    url.searchParams.delete("token");
+    url.searchParams.delete("email");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  };
+
+  const updateLocalAccountPassword = ({ email, newPassword }) => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const value = window.localStorage.getItem("jnananet_accounts");
+      const accounts = value ? JSON.parse(value) : [];
+      if (!Array.isArray(accounts)) return;
+
+      const normalizedEmail = String(email || "").toLowerCase();
+      const updatedAccounts = accounts.map((account) => (
+        String(account.email || "").toLowerCase() === normalizedEmail
+          ? { ...account, password: newPassword }
+          : account
+      ));
+
+      window.localStorage.setItem("jnananet_accounts", JSON.stringify(updatedAccounts));
+    } catch {
+      // Ignore malformed local storage auth records.
+    }
+  };
+
+  const handleAuthSubmit = async (event) => {
     event.preventDefault();
     const email = authForm.email.trim().toLowerCase();
     const password = authForm.password;
@@ -1804,6 +1869,11 @@ function App() {
       setAuthUser(account);
       setAuthMessage("✅ Account created and logged in.");
       setActivePage("dashboard");
+      await syncAccountWithBackend({
+        email: account.email,
+        password,
+        name: account.name,
+      });
       return;
     }
 
@@ -1813,7 +1883,68 @@ function App() {
         return;
       }
 
-      setAuthMessage("If this email is registered, reset instructions have been sent.");
+      try {
+        const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setAuthMessage(data?.message || "Unable to send reset email right now.");
+          return;
+        }
+
+        setAuthMessage(data?.message || "If this email is registered, reset instructions have been sent.");
+      } catch {
+        setAuthMessage("Unable to send reset email right now.");
+      }
+      return;
+    }
+
+    if (authMode === "reset") {
+      if (!email) {
+        setAuthMessage("Missing email in reset link.");
+        return;
+      }
+
+      if (!resetToken) {
+        setAuthMessage("Invalid or expired reset link.");
+        return;
+      }
+
+      if (!password || password.length < 8) {
+        setAuthMessage("New password must be at least 8 characters.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/auth/reset-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            token: resetToken,
+            newPassword: password,
+          }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setAuthMessage(data?.message || "Unable to reset password.");
+          return;
+        }
+
+        updateLocalAccountPassword({ email, newPassword: password });
+        clearResetQueryFromUrl();
+        setResetToken("");
+        setAuthMode("login");
+        setAuthForm((prev) => ({ ...prev, password: "" }));
+        setAuthMessage("✅ Password reset successful. Please log in.");
+      } catch {
+        setAuthMessage("Unable to reset password right now.");
+      }
       return;
     }
 
@@ -1829,6 +1960,11 @@ function App() {
     setAuthUser(matched);
     setAuthMessage("✅ Logged in successfully.");
     setActivePage("dashboard");
+    await syncAccountWithBackend({
+      email: matched.email,
+      password,
+      name: matched.name,
+    });
   };
 
   const handleLogout = () => {
@@ -3356,7 +3492,13 @@ function App() {
           <h2 id="typing" className="typing-line">{typedAuthSubtitle}</h2>
 
           <h3 className="auth-mode-title">
-            {authMode === "signup" ? "Create Account" : authMode === "forgot" ? "Forgot Password" : "Student Login"}
+            {authMode === "signup"
+              ? "Create Account"
+              : authMode === "forgot"
+                ? "Forgot Password"
+                : authMode === "reset"
+                  ? "Reset Password"
+                  : "Student Login"}
           </h3>
 
           <form className="support-form auth-login-form" onSubmit={handleAuthSubmit}>
@@ -3369,7 +3511,12 @@ function App() {
 
             <label>
               Email
-              <input type="email" value={authForm.email} onChange={(event) => handleAuthInput("email", event.target.value)} />
+              <input
+                type="email"
+                value={authForm.email}
+                disabled={authMode === "reset"}
+                onChange={(event) => handleAuthInput("email", event.target.value)}
+              />
             </label>
 
             {authMode !== "forgot" && (
@@ -3411,16 +3558,49 @@ function App() {
             )}
 
             <button className="btn-neon login-btn" type="submit">
-              {authMode === "signup" ? "Create Account" : authMode === "forgot" ? "Send Reset Link" : "Login"}
+              {authMode === "signup"
+                ? "Create Account"
+                : authMode === "forgot"
+                  ? "Send Reset Link"
+                  : authMode === "reset"
+                    ? "Update Password"
+                    : "Login"}
             </button>
 
             {authMessage && <p className="contact-status ok">{authMessage}</p>}
           </form>
 
           <div className="auth-switches login-links">
-            <button className={`auth-link-btn ${authMode === "signup" ? "active" : ""}`} onClick={() => setAuthMode("signup")}>Sign Up</button>
-            <button className={`auth-link-btn ${authMode === "forgot" ? "active" : ""}`} onClick={() => setAuthMode("forgot")}>Forgot Password</button>
-            <button className={`auth-link-btn ${authMode === "login" ? "active" : ""}`} onClick={() => setAuthMode("login")}>Login</button>
+            <button
+              className={`auth-link-btn ${authMode === "signup" ? "active" : ""}`}
+              onClick={() => {
+                setResetToken("");
+                clearResetQueryFromUrl();
+                setAuthMode("signup");
+              }}
+            >
+              Sign Up
+            </button>
+            <button
+              className={`auth-link-btn ${authMode === "forgot" || authMode === "reset" ? "active" : ""}`}
+              onClick={() => {
+                setResetToken("");
+                clearResetQueryFromUrl();
+                setAuthMode("forgot");
+              }}
+            >
+              Forgot Password
+            </button>
+            <button
+              className={`auth-link-btn ${authMode === "login" ? "active" : ""}`}
+              onClick={() => {
+                setResetToken("");
+                clearResetQueryFromUrl();
+                setAuthMode("login");
+              }}
+            >
+              Login
+            </button>
           </div>
         </div>
 
