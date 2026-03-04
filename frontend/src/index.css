@@ -60,6 +60,17 @@ body {
   border-color: rgba(56, 189, 248, 0.8);
 }
 
+.icon-toggle {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  border-radius: 999px;
+}
+
 .starfield {
   position: fixed;
   inset: 0;
@@ -114,6 +125,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 14px;
   background: rgba(15, 23, 42, 0.48);
   border-color: rgba(148, 163, 184, 0.3);
@@ -124,22 +136,25 @@ body {
 }
 
 .nav-center {
-  flex: 1;
+  flex: 1 1 520px;
   min-width: 0;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .nav-right {
-  flex: 0 0 auto;
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
   justify-content: flex-end;
 }
 
 .nav-collapsible {
-  flex: 1;
+  flex: 1 1 680px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 14px;
   min-width: 0;
 }
@@ -157,6 +172,19 @@ body {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brand-text {
   font-size: 24px;
   font-weight: 800;
   background: linear-gradient(135deg, #8ec5ff, #a78bfa, #22d3ee);
@@ -170,7 +198,7 @@ body {
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-width: 0;
   overflow: visible;
   scrollbar-width: none;
@@ -252,9 +280,28 @@ body {
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
   flex-shrink: 0;
+}
+
+.language-select {
+  min-width: 126px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  background: rgba(15, 23, 42, 0.7);
+  color: var(--text-main);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.language-select:hover,
+.language-select:focus {
+  border-color: rgba(34, 211, 238, 0.75);
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+  transform: translateY(-1px);
+  outline: none;
 }
 
 .profile-menu {
@@ -278,13 +325,20 @@ body {
   border: 1px solid rgba(148, 163, 184, 0.35);
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(129, 140, 248, 0.32));
   color: #e6f6ff;
+  overflow: hidden;
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-name-label {
   font-size: 13px;
   color: var(--text-main);
   font-weight: 700;
-  max-width: 86px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1849,6 +1903,37 @@ select {
   font-size: 13px;
 }
 
+.profile-photo-field {
+  grid-column: 1 / -1;
+}
+
+.profile-photo-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.profile-photo-preview {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.45);
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-weight: 700;
+}
+
+.profile-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* Modern animated auth entry background */
 .app-shell.auth-entry {
   background: linear-gradient(270deg, #0f172a, #1e3a8a, #0f172a);
@@ -2599,6 +2684,12 @@ select {
   color: #0f172a;
 }
 
+.app-shell.light .language-select {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.2);
+}
+
 .app-shell.light .more-dropdown {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(15, 23, 42, 0.2);
@@ -2612,6 +2703,11 @@ select {
 .app-shell.light .profile-dropdown {
   background: rgba(255, 255, 255, 0.95);
   color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.18);
+}
+
+.app-shell.light .profile-photo-preview {
+  background: rgba(255, 255, 255, 0.95);
   border-color: rgba(15, 23, 42, 0.18);
 }
 
@@ -2799,6 +2895,24 @@ select {
   color: #0f172a !important;
 }
 
+.app-shell.light .auth-form-panel .contact-status {
+  color: #b91c1c;
+}
+
+.app-shell.light .auth-form-panel .contact-status.ok {
+  color: #047857;
+}
+
+@media (max-width: 1180px) {
+  .nav-actions {
+    justify-content: flex-start;
+  }
+
+  .profile-name-label {
+    max-width: 94px;
+  }
+}
+
 @media (max-width: 1100px) {
   .dashboard-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2895,6 +3009,14 @@ select {
 
   .profile-dropdown button {
     display: block;
+  }
+
+  .brand-logo {
+    height: 32px;
+  }
+
+  .brand-text {
+    font-size: 22px;
   }
 
   .field-grid,

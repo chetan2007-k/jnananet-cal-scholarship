@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./index.css";
 import ScholarshipDetails from "./ScholarshipDetails";
 
@@ -26,6 +26,7 @@ const defaultStudentProfile = {
   state: "",
   district: "",
   category: "General",
+  profilePhoto: "",
 };
 
 // State -> district lookup used by dependent dropdowns in profile and application forms.
@@ -111,6 +112,63 @@ const readStudentProfile = () => {
   } catch {
     return null;
   }
+};
+
+const toNumber = (value) => {
+  const parsed = Number.parseFloat(String(value ?? "").replace(/,/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const normalizeCourse = (value = "") => String(value).trim().toLowerCase();
+
+const calculateEligibilityScoreFromProfile = (
+  { course, percentage, income, category, hasAadhaar },
+  scholarships = []
+) => {
+  const normalizedCourse = normalizeCourse(course);
+  const safePercentage = Math.min(100, Math.max(0, toNumber(percentage)));
+  const safeIncome = Math.max(0, toNumber(income));
+  const categoryLabel = String(category || "General").toUpperCase();
+
+  const academicScore = Math.round((safePercentage / 100) * 35);
+
+  let incomeScore = 8;
+  if (safeIncome > 0 && safeIncome <= 250000) {
+    incomeScore = 30;
+  } else if (safeIncome > 250000 && safeIncome <= 500000) {
+    incomeScore = 24;
+  } else if (safeIncome > 500000 && safeIncome <= 800000) {
+    incomeScore = 16;
+  }
+
+  const categoryScore =
+    categoryLabel === "SC" || categoryLabel === "ST"
+      ? 10
+      : ["OBC", "EWS"].includes(categoryLabel)
+        ? 8
+        : 5;
+
+  const aadhaarScore = hasAadhaar ? 5 : 0;
+
+  const eligibleCount = scholarships.reduce((count, scholarship) => {
+    const scholarshipCourse = normalizeCourse(scholarship?.course || "any");
+    const courseMatch =
+      !normalizedCourse
+      || scholarshipCourse === "any"
+      || scholarshipCourse.includes(normalizedCourse)
+      || normalizedCourse.includes(scholarshipCourse);
+    const marksMatch = safePercentage > 0 ? safePercentage >= Number(scholarship?.minMarks || 0) : true;
+    const incomeMatch = safeIncome > 0 ? safeIncome <= Number(scholarship?.maxIncome || Number.MAX_SAFE_INTEGER) : true;
+
+    return courseMatch && marksMatch && incomeMatch ? count + 1 : count;
+  }, 0);
+
+  const criteriaScore = scholarships.length > 0
+    ? Math.round((eligibleCount / scholarships.length) * 20)
+    : 0;
+
+  const totalScore = academicScore + incomeScore + categoryScore + aadhaarScore + criteriaScore;
+  return Math.max(0, Math.min(100, totalScore));
 };
 
 const AUTH_TYPING_TEXT = "Discover scholarships using AI";
@@ -1117,6 +1175,7 @@ function App() {
       state: "",
       district: "",
       category: "General",
+      profilePhoto: authUser.profilePhoto || "",
     };
 
     setStudentProfileForm({
@@ -1352,6 +1411,7 @@ function App() {
       state: studentProfileForm.state.trim(),
       district: studentProfileForm.district.trim(),
       category: studentProfileForm.category || "General",
+      profilePhoto: studentProfileForm.profilePhoto || "",
     };
 
     if (typeof window !== "undefined") {
@@ -1370,6 +1430,7 @@ function App() {
         email: updatedProfile.email || prev.email,
         course: updatedProfile.course || prev.course,
         familyIncome: Number.parseFloat(updatedProfile.familyIncome || "0") || 0,
+        profilePhoto: updatedProfile.profilePhoto || prev.profilePhoto || "",
       };
     });
 
@@ -1389,6 +1450,7 @@ function App() {
               email: updatedProfile.email || account.email,
               course: updatedProfile.course || account.course,
               familyIncome: Number.parseFloat(updatedProfile.familyIncome || "0") || 0,
+              profilePhoto: updatedProfile.profilePhoto || account.profilePhoto || "",
             };
           });
           window.localStorage.setItem("jnananet_accounts", JSON.stringify(nextAccounts));
@@ -1399,19 +1461,47 @@ function App() {
     }
   };
 
-  const handleCheckEligibility = () => {
-    const percentage = parseFloat(eligibilityForm.percentage || "0");
-    const income = parseFloat(eligibilityForm.income || "0");
-    const hasAadhaar = eligibilityForm.aadhaar === "Yes";
+  const handleProfilePhotoUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    let score = 0;
-    if (percentage >= 60) score += 35;
-    if (income > 0 && income <= 400000) score += 35;
-    if (["SC", "ST", "OBC", "EWS"].includes(eligibilityForm.category)) score += 20;
-    if (hasAadhaar) score += 10;
+    if (!file.type.startsWith("image/")) {
+      setProfileStatus("Please choose a valid image file.");
+      setTimeout(() => setProfileStatus(""), 2500);
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const imageData = typeof reader.result === "string" ? reader.result : "";
+      if (!imageData) return;
+
+      setStudentProfileForm((prev) => ({
+        ...prev,
+        profilePhoto: imageData,
+      }));
+      setProfileStatus("✅ Profile photo selected. Click Update Profile to save.");
+      setTimeout(() => setProfileStatus(""), 2500);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCheckEligibility = () => {
+    const sourceScholarships = scholarshipCatalog.length > 0 ? scholarshipCatalog : fallbackScholarships;
+    const score = calculateEligibilityScoreFromProfile(
+      {
+        course: eligibilityForm.course || studentProfileForm.course || authUser?.course || "",
+        percentage: eligibilityForm.percentage || authUser?.percentage || "",
+        income: eligibilityForm.income || studentProfileForm.familyIncome || authUser?.familyIncome || "",
+        category: studentProfileForm.category || eligibilityForm.category || "General",
+        hasAadhaar: eligibilityForm.aadhaar === "Yes",
+      },
+      sourceScholarships
+    );
 
     setEligibilityScore(score);
-    setEligibilityResult(score >= 65);
+    setEligibilityResult(score >= 60);
   };
 
   const mandatoryFields = [
@@ -1561,6 +1651,34 @@ function App() {
   };
 
   const getScholarshipSource = () => (scholarshipCatalog.length > 0 ? scholarshipCatalog : fallbackScholarships);
+
+  const personalizedEligibilityScore = useMemo(() => {
+    const sourceScholarships = scholarshipCatalog.length > 0 ? scholarshipCatalog : fallbackScholarships;
+
+    return calculateEligibilityScoreFromProfile(
+      {
+        course: studentProfileForm.course || eligibilityForm.course || authUser?.course || "",
+        percentage: eligibilityForm.percentage || authUser?.percentage || "",
+        income: eligibilityForm.income || studentProfileForm.familyIncome || authUser?.familyIncome || "",
+        category: studentProfileForm.category || eligibilityForm.category || "General",
+        hasAadhaar: eligibilityForm.aadhaar === "Yes",
+      },
+      sourceScholarships
+    );
+  }, [
+    authUser?.course,
+    authUser?.familyIncome,
+    authUser?.percentage,
+    eligibilityForm.aadhaar,
+    eligibilityForm.category,
+    eligibilityForm.course,
+    eligibilityForm.income,
+    eligibilityForm.percentage,
+    scholarshipCatalog,
+    studentProfileForm.category,
+    studentProfileForm.course,
+    studentProfileForm.familyIncome,
+  ]);
 
   const openApplyPage = (scholarship) => {
     // Pass scholarship selection to Apply page and persist in URL query.
@@ -2063,7 +2181,7 @@ function App() {
   };
 
   const renderHome = () => {
-    const displayedScore = eligibilityScore || 87;
+    const displayedScore = eligibilityScore > 0 ? eligibilityScore : personalizedEligibilityScore;
     const aiConfidence = Math.min(100, Math.round((displayedScore / 100) * 92 + 5));
     const scholarships = getRecommendedScholarships();
     const filteredScholarships = getFilteredScholarships(scholarships);
@@ -3212,17 +3330,23 @@ function App() {
       <div className="auth-layout">
         <div className="glass stories-shell auth-shell auth-form-panel">
           <div className="auth-utility-row">
-            <select value={language} onChange={(event) => setLanguage(event.target.value)}>
+            <select
+              className="language-select"
+              value={language}
+              onChange={(event) => setLanguage(event.target.value)}
+            >
               <option>English</option>
               <option>Tamil</option>
               <option>Telugu</option>
               <option>Hindi</option>
             </select>
             <button
-              className="theme-toggle"
+              type="button"
+              className="theme-toggle icon-toggle"
               onClick={() => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))}
+              aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
-              {themeMode === "dark" ? t.nav.lightMode : t.nav.darkMode}
+              <span aria-hidden="true">{themeMode === "dark" ? "☀️" : "🌙"}</span>
             </button>
           </div>
 
@@ -3324,7 +3448,7 @@ function App() {
       return acc;
     }, {});
     const applicationStatuses = Object.entries(statusCounts);
-    const dashboardScore = eligibilityScore || 87;
+    const dashboardScore = eligibilityScore > 0 ? eligibilityScore : personalizedEligibilityScore;
 
     return (
       <section className="moon-section">
@@ -3513,6 +3637,20 @@ function App() {
                 <option>ST</option>
               </select>
             </label>
+
+            <label className="profile-photo-field">
+              Profile Photo
+              <div className="profile-photo-upload-row">
+                <div className="profile-photo-preview" aria-hidden="true">
+                  {profilePhotoSrc ? (
+                    <img src={profilePhotoSrc} alt="" />
+                  ) : (
+                    <span>{studentInitial}</span>
+                  )}
+                </div>
+                <input type="file" accept="image/*" onChange={handleProfilePhotoUpload} />
+              </div>
+            </label>
           </div>
 
           <button className="btn-neon" type="submit">Update Profile</button>
@@ -3522,9 +3660,13 @@ function App() {
     </section>
   );
 
-  const studentDisplayName = studentProfileForm.fullName || authUser?.name || "Student";
-  const navProfileName = "Chetan";
-  const studentInitial = "C";
+  const studentDisplayName =
+    String(studentProfileForm.fullName || authUser?.name || "").trim()
+    || String(authUser?.email || "").split("@")[0]
+    || "Student";
+  const navProfileName = studentDisplayName;
+  const studentInitial = String(navProfileName).trim().charAt(0).toUpperCase() || "S";
+  const profilePhotoSrc = studentProfileForm.profilePhoto || authUser?.profilePhoto || "";
 
   const renderSupportChatWidget = () => (
     <>
@@ -3599,7 +3741,10 @@ function App() {
 
       <nav className="top-nav glass">
         <div className="nav-left">
-          <div className="brand">JnanaNet</div>
+          <div className="brand" aria-label="JnanaNet">
+            <img className="brand-logo" src="/jnananet-icon.svg" alt="JnanaNet logo" />
+            <span className="brand-text">JnanaNet</span>
+          </div>
         </div>
 
         <button
@@ -3650,27 +3795,34 @@ function App() {
           </div>
 
           <div className="nav-right nav-actions">
-            <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+            <select className="language-select" value={language} onChange={(e) => setLanguage(e.target.value)}>
               <option>English</option>
               <option>Tamil</option>
               <option>Telugu</option>
               <option>Hindi</option>
             </select>
             <button
-              className="theme-toggle"
+              type="button"
+              className="theme-toggle icon-toggle"
               onClick={() => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))}
+              aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
-              {themeMode === "dark" ? t.nav.lightMode : t.nav.darkMode}
+              <span aria-hidden="true">{themeMode === "dark" ? "☀️" : "🌙"}</span>
             </button>
 
             <div className="profile-menu" ref={profileMenuRef}>
               <button
+                type="button"
                 className="profile-icon"
                 onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
                 aria-label="Open profile menu"
                 aria-expanded={isProfileDropdownOpen}
               >
-                {studentInitial}
+                {profilePhotoSrc ? (
+                  <img className="profile-image" src={profilePhotoSrc} alt={`${navProfileName} profile`} />
+                ) : (
+                  studentInitial
+                )}
               </button>
               <span className="profile-name-label">{navProfileName}</span>
 
