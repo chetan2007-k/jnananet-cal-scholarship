@@ -48,6 +48,70 @@ The platform is designed for real-world student workflows: profile submission, e
 - **AI Layer:** Bedrock-backed guidance service for conversational scholarship support.
 - **Storage/Upload:** Amazon S3 integrated upload flow.
 
+## 🚀 Future Scope & Integration Roadmap
+JnanaNet is designed as a scalable scholarship intelligence infrastructure for India. Future development will focus on real-time integration, predictive intelligence, and ecosystem expansion.
+
+### 1) Real-Time Scholarship Data Integration
+Future versions will integrate with official scholarship sources including:
+- National Scholarship Portal (NSP)
+- State government scholarship portals
+- Institutional funding programs
+
+This expansion will be implemented using automated scraping pipelines and structured ingestion workflows to ensure up-to-date data coverage.
+
+### 2) AI-Based Application Outcome Prediction
+The scoring engine will evolve using anonymized historical application outcomes to:
+- Train predictive ML models
+- Estimate selection probability
+- Refine recommendation accuracy
+
+This progression enables stronger decision intelligence and higher confidence recommendations.
+
+### 3) Personalized Student Journey Engine
+Future development includes:
+- Deadline automation
+- Document-readiness tracking
+- Adaptive recommendation workflows
+- Behavioral personalization models
+
+These capabilities will support end-to-end scholarship application journeys.
+
+### 4) Institutional & Government Integration
+JnanaNet can scale into:
+- Institutional scholarship advisory dashboards
+- Government-level analytics systems
+- Centralized student assistance infrastructure
+
+This trajectory supports policy-driven decision-making and wider public impact.
+
+### 5) AI-Native Bharat Expansion
+Future roadmap includes:
+- Voice-first scholarship workflows
+- Regional-language conversational AI
+- Low-bandwidth deployment optimization
+
+These initiatives improve accessibility for underserved student communities.
+
+## 🌍 Expected Impact
+JnanaNet transforms scholarship discovery into an intelligent decision-support process rather than a simple search experience.
+
+Expected outcomes:
+- Reduced missed opportunities due to lack of awareness
+- Improved scholarship application success rates
+- Smarter decision-making through explainable scoring
+- Scalable guidance infrastructure for India
+
+## 📈 Scalability Vision
+JnanaNet is built using a modular, microservice-ready architecture supporting horizontal scaling.
+
+Future scaling strategy includes:
+- Containerized deployment pipelines
+- Distributed API services
+- Scalable ML inference layers
+- Cloud-native orchestration
+
+This ensures readiness for large-scale student adoption.
+
 ## API Endpoints
 
 ### Health
