@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./index.css";
 import ScholarshipDetails from "./ScholarshipDetails";
+import AdminAnalytics from "./AdminAnalytics";
+import { calculateSuccessProbability, getRiskLevelFromProbability } from "./utils/successProbability";
+import { calculateProfileStrength } from "./utils/profileStrength";
+import { generateWhatIfSimulations } from "./utils/whatIfSimulator";
+import { generateSmartInsights } from "./utils/insightGenerator";
+import { getRecommendationTag } from "./utils/recommendationTag";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://13.62.42.76:5000";
 
@@ -992,6 +998,8 @@ function App() {
   });
   const [eligibilityScore, setEligibilityScore] = useState(0);
   const [eligibilityResult, setEligibilityResult] = useState(null);
+  const [mlEligibilityPrediction, setMlEligibilityPrediction] = useState(null);
+  const [isMlEligibilityLoading, setIsMlEligibilityLoading] = useState(false);
 
   const [applicationForm, setApplicationForm] = useState({
     fullName: "",
@@ -1510,13 +1518,20 @@ function App() {
     reader.readAsDataURL(file);
   };
 
-  const handleCheckEligibility = () => {
+  const handleCheckEligibility = async () => {
     const sourceScholarships = scholarshipCatalog.length > 0 ? scholarshipCatalog : fallbackScholarships;
+    const marksInput = Number.parseFloat(String(
+      eligibilityForm.percentage || authUser?.percentage || "0"
+    ));
+    const incomeInput = Number.parseFloat(String(
+      eligibilityForm.income || studentProfileForm.familyIncome || authUser?.familyIncome || "0"
+    ));
+
     const score = calculateEligibilityScoreFromProfile(
       {
         course: eligibilityForm.course || studentProfileForm.course || authUser?.course || "",
-        percentage: eligibilityForm.percentage || authUser?.percentage || "",
-        income: eligibilityForm.income || studentProfileForm.familyIncome || authUser?.familyIncome || "",
+        percentage: marksInput,
+        income: incomeInput,
         category: studentProfileForm.category || eligibilityForm.category || "General",
         hasAadhaar: eligibilityForm.aadhaar === "Yes",
       },
@@ -1525,6 +1540,40 @@ function App() {
 
     setEligibilityScore(score);
     setEligibilityResult(score >= 60);
+
+    setIsMlEligibilityLoading(true);
+    setMlEligibilityPrediction(null);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/ml-eligibility`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          marks: marksInput,
+          income: incomeInput,
+          caste: studentProfileForm.category || eligibilityForm.category || "General",
+          state: studentProfileForm.state || applicationForm.state || "",
+          course: eligibilityForm.course || studentProfileForm.course || authUser?.course || "Engineering",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("ML prediction request failed");
+      }
+
+      const data = await response.json();
+      setMlEligibilityPrediction({
+        probability: Number.parseInt(data?.probability, 10) || 0,
+        explanation: Array.isArray(data?.explanation) ? data.explanation : ["No explanation available"],
+      });
+    } catch {
+      setMlEligibilityPrediction({
+        probability: null,
+        explanation: ["ML prediction unavailable right now"],
+      });
+    } finally {
+      setIsMlEligibilityLoading(false);
+    }
   };
 
   const mandatoryFields = [
@@ -2086,34 +2135,201 @@ function App() {
     return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
   };
 
+  const getDeadlineIntel = (deadlineLabel) => {
+    const daysLeft = getDaysLeft(deadlineLabel);
+
+    if (daysLeft === null) {
+      return { tone: "closed", label: "Closed", daysLeft: null };
+    }
+
+    if (daysLeft === 0) {
+      return { tone: "today", label: "Closing Today", daysLeft };
+    }
+
+    if (daysLeft <= 7) {
+      return { tone: "soon", label: "Closing Soon", daysLeft };
+    }
+
+    return { tone: "safe", label: "Safe", daysLeft };
+  };
+
   const getScholarshipMatchDetails = (scholarship) => {
     const income = parseFloat(eligibilityForm.income || "0");
     const percentage = parseFloat(eligibilityForm.percentage || "0");
+    const profileCategory = String(eligibilityForm.category || studentProfileForm.category || "General").toUpperCase();
+    const profileState = String(studentProfileForm.state || "").trim();
     const selectedCourse = String(eligibilityForm.course || "").toLowerCase();
     const scholarshipCourse = String(scholarship.course || "").toLowerCase();
+    const scholarshipCategory = String(getScholarshipCategory(scholarship) || "General").toUpperCase();
+    const scholarshipState = getScholarshipState(scholarship);
 
     const incomeEligible = income > 0 ? income <= scholarship.maxIncome : true;
     const academicStrong = percentage > 0 ? percentage >= scholarship.minMarks : true;
     const courseEligible = selectedCourse
       ? scholarshipCourse.includes(selectedCourse) || selectedCourse.includes(scholarshipCourse) || scholarshipCourse === "any"
       : true;
+    const categoryEligible = scholarshipCategory === "GENERAL" || scholarshipCategory === profileCategory;
+    const stateEligible = profileState
+      ? scholarshipState === "All India" || scholarshipState === profileState
+      : true;
 
-    const score =
-      (incomeEligible ? 35 : 0) +
-      (courseEligible ? 20 : 0) +
-      (academicStrong
+    const marksContribution =
+      academicStrong
         ? 45
         : percentage > 0
           ? Math.min(45, Math.round((percentage / Math.max(1, scholarship.minMarks)) * 45))
-          : 0);
+          : 0;
+    const incomeContribution = incomeEligible ? 35 : 0;
+    const courseContribution = courseEligible ? 20 : 0;
+
+    const score =
+      incomeContribution +
+      courseContribution +
+      marksContribution;
+
+    const normalizedDocs = Array.isArray(scholarship.documents)
+      ? scholarship.documents.map((documentName) => String(documentName).toLowerCase())
+      : [];
+    const missingDocuments = [];
+
+    if (normalizedDocs.some((doc) => doc.includes("income")) && !uploads.income) {
+      missingDocuments.push("income certificate");
+    }
+    if (normalizedDocs.some((doc) => doc.includes("mark")) && !uploads.marksheet) {
+      missingDocuments.push("marksheet");
+    }
+    if (normalizedDocs.some((doc) => doc.includes("aadhaar")) && !(uploads.aadhaar || eligibilityForm.aadhaar === "Yes")) {
+      missingDocuments.push("aadhaar");
+    }
 
     const reasons = [
       `${incomeEligible ? "✔" : "✖"} Income ${incomeEligible ? "eligible" : "above limit"}`,
       `${courseEligible ? "✔" : "✖"} Course ${courseEligible ? "matched" : "not matched"}`,
       `${academicStrong ? "✔" : "✖"} Academic score ${academicStrong ? "strong" : "below cut-off"}`,
+      `${categoryEligible ? "✔" : "✖"} Category ${categoryEligible ? "eligible" : "may need category-specific scheme"}`,
+      `${stateEligible ? "✔" : "✖"} State ${stateEligible ? "aligned" : "check state-specific restrictions"}`,
+      `${missingDocuments.length === 0 ? "✔" : "❌"} ${
+        missingDocuments.length === 0
+          ? "Core documents available for this scheme"
+          : `Missing ${missingDocuments.join(", ")}`
+      }`,
     ];
 
-    return { score: Math.min(100, Math.max(0, score)), reasons };
+    const breakdown = [
+      { label: "Marks", value: marksContribution },
+      { label: "Income", value: incomeContribution },
+      { label: "Course", value: courseContribution },
+      { label: "Category", value: categoryEligible ? 100 : 0, advisory: true },
+      { label: "State", value: profileState ? (stateEligible ? 100 : 0) : 0, advisory: true },
+    ];
+
+    const normalizedScore = Math.min(100, Math.max(0, score));
+    const deadlineIntel = getDeadlineIntel(scholarship.deadline);
+    const matchTone = normalizedScore >= 80 ? "high" : normalizedScore >= 60 ? "good" : "review";
+    const matchBadge = normalizedScore >= 80 ? "High Match" : normalizedScore >= 60 ? "Eligible" : "Needs Review";
+
+    return {
+      score: normalizedScore,
+      reasons,
+      breakdown,
+      isEligible: normalizedScore >= 60,
+      matchTone,
+      matchBadge,
+      deadlineIntel,
+    };
+  };
+
+  const getSuccessProbabilityInsight = (scholarship) => {
+    const marks = Number.parseFloat(String(eligibilityForm.percentage || authUser?.percentage || "0"));
+    const income = Number.parseFloat(String(
+      eligibilityForm.income || studentProfileForm.familyIncome || authUser?.familyIncome || "0"
+    ));
+
+    const profile = {
+      marks,
+      income,
+      category: studentProfileForm.category || eligibilityForm.category || "General",
+      deadlineDaysLeft: getDaysLeft(scholarship?.deadline),
+    };
+
+    return calculateSuccessProbability(profile, scholarship || {});
+  };
+
+  const getComparisonDifficultyScore = (scholarship) => {
+    const minMarks = Number(scholarship?.minMarks || 0);
+    const maxIncome = Number(scholarship?.maxIncome || 0);
+    const docCount = Array.isArray(scholarship?.documents) ? scholarship.documents.length : 0;
+
+    const marksEase = Math.max(0, 100 - minMarks);
+    const incomeEase = Math.min(100, Math.round((maxIncome / 800000) * 100));
+    const docsEase = Math.max(0, 100 - docCount * 12);
+
+    return Math.round((marksEase * 0.45) + (incomeEase * 0.35) + (docsEase * 0.2));
+  };
+
+  const getComparisonDeadlineScore = (scholarship) => {
+    const daysLeft = getDaysLeft(scholarship?.deadline);
+    if (daysLeft === null) return 55;
+    if (daysLeft <= 1) return 40;
+    if (daysLeft <= 7) return 60;
+    if (daysLeft <= 30) return 80;
+    return 95;
+  };
+
+  const getComparisonIntelligence = (firstScholarship, secondScholarship) => {
+    if (!firstScholarship || !secondScholarship) return null;
+
+    const amountFirst = parseScholarshipAmount(firstScholarship.amount);
+    const amountSecond = parseScholarshipAmount(secondScholarship.amount);
+    const maxAmount = Math.max(amountFirst, amountSecond, 1);
+
+    const first = {
+      scholarship: firstScholarship,
+      eligibility: getScholarshipMatchDetails(firstScholarship).score,
+      amount: Math.round((amountFirst / maxAmount) * 100),
+      deadline: getComparisonDeadlineScore(firstScholarship),
+      difficulty: getComparisonDifficultyScore(firstScholarship),
+      docCount: Array.isArray(firstScholarship.documents) ? firstScholarship.documents.length : 0,
+    };
+
+    const second = {
+      scholarship: secondScholarship,
+      eligibility: getScholarshipMatchDetails(secondScholarship).score,
+      amount: Math.round((amountSecond / maxAmount) * 100),
+      deadline: getComparisonDeadlineScore(secondScholarship),
+      difficulty: getComparisonDifficultyScore(secondScholarship),
+      docCount: Array.isArray(secondScholarship.documents) ? secondScholarship.documents.length : 0,
+    };
+
+    const firstTotal = first.eligibility + first.amount + first.deadline + first.difficulty;
+    const secondTotal = second.eligibility + second.amount + second.deadline + second.difficulty;
+
+    const winner = firstTotal >= secondTotal ? first : second;
+    const runnerUp = winner === first ? second : first;
+
+    const reasons = [];
+    if (winner.difficulty >= runnerUp.difficulty) {
+      reasons.push("✔ Higher acceptance rate");
+    }
+    if (winner.eligibility >= runnerUp.eligibility) {
+      reasons.push("✔ Better eligibility match");
+    }
+    if (winner.docCount <= runnerUp.docCount) {
+      reasons.push("✔ Easier documentation");
+    }
+
+    if (reasons.length === 0) {
+      reasons.push("✔ Better overall composite score");
+    }
+
+    return {
+      winnerName: winner.scholarship.name,
+      reasons,
+      scores: {
+        [first.scholarship.name]: firstTotal,
+        [second.scholarship.name]: secondTotal,
+      },
+    };
   };
 
   const getRecommendedScholarships = () => {
@@ -2326,6 +2542,10 @@ function App() {
     const comparedScholarships = compareSelection
       .map((id) => scholarships.find(({ scholarship }) => scholarship.id === id)?.scholarship)
       .filter(Boolean);
+    const comparisonIntel =
+      comparedScholarships.length === 2
+        ? getComparisonIntelligence(comparedScholarships[0], comparedScholarships[1])
+        : null;
     const stateScholarshipCounts = aiSearchScholarships.reduce((accumulator, { scholarship }) => {
       const state = getScholarshipState(scholarship);
       accumulator[state] = (accumulator[state] || 0) + 1;
@@ -2518,14 +2738,37 @@ function App() {
                   </tr>
                 </tbody>
               </table>
+
+              {comparisonIntel && (
+                <div className="comparison-intelligence">
+                  <h4>Comparison Intelligence</h4>
+                  <p><strong>Winner:</strong> {comparisonIntel.winnerName}</p>
+                  <p><strong>Why:</strong></p>
+                  <ul>
+                    {comparisonIntel.reasons.map((reason) => (
+                      <li key={`${comparisonIntel.winnerName}-${reason}`}>{reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
           {isScholarshipLoading && <p className="loading-note">Loading scholarships...</p>}
           <div className="scholarship-grid">
-            {aiSearchScholarships.map(({ scholarship, match }) => (
+            {aiSearchScholarships.map(({ scholarship, match }) => {
+              const successPrediction = getSuccessProbabilityInsight(scholarship);
+              const recommendationTag = getRecommendationTag(successPrediction.probability);
+
+              return (
               <article className="glass scholarship-card" key={scholarship.id || scholarship.name}>
-                <h3>{scholarship.name}</h3>
+                <div className="scholarship-card-head">
+                  <h3>{scholarship.name}</h3>
+                  <div className="scholarship-badges">
+                    <span className={`insight-badge ${match.matchTone}`}>{match.matchBadge}</span>
+                    <span className={`insight-badge ${match.deadlineIntel.tone}`}>{match.deadlineIntel.label}</span>
+                  </div>
+                </div>
                 <p>{scholarship.provider}</p>
                 <label className="compare-toggle">
                   <input
@@ -2539,7 +2782,14 @@ function App() {
                 <div className="scholarship-bottom">
                   <div className="scholarship-primary-stack">
                     <p className="scholarship-amount">{scholarship.amount}</p>
-                    <p className="scholarship-deadline">Deadline: {scholarship.deadline}</p>
+                    <p className="scholarship-deadline">
+                      Deadline: {scholarship.deadline}
+                      {match.deadlineIntel.daysLeft !== null && (
+                        <span className={`deadline-inline-chip ${match.deadlineIntel.tone}`}>
+                          {match.deadlineIntel.daysLeft}d left
+                        </span>
+                      )}
+                    </p>
                     <button className="apply-mini" onClick={() => openApplyPage(scholarship)}>Apply</button>
                   </div>
                   <div className="scholarship-actions">
@@ -2555,13 +2805,35 @@ function App() {
                   </div>
                 </div>
                 <p className="match-score">Match Score: {match.score}%</p>
+                <div className="score-breakdown-panel">
+                  <h4>Breakdown</h4>
+                  <div className="score-breakdown-list">
+                    {match.breakdown.map((item) => (
+                      <div className="score-breakdown-row" key={`${scholarship.id}-${item.label}`}>
+                        <div className="score-breakdown-head">
+                          <span>{item.label}</span>
+                          <strong>{item.value}%</strong>
+                        </div>
+                        <div className="score-breakdown-track">
+                          <span
+                            className={`score-breakdown-fill ${item.advisory ? "advisory" : "core"}`}
+                            style={{ width: `${item.value}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 <ul className="match-reasons">
                   {match.reasons.map((reason) => (
                     <li key={`${scholarship.name}-${reason}`}>{reason}</li>
                   ))}
                 </ul>
+
+                <p className={`ai-verdict-tag ${recommendationTag.tone}`}>{recommendationTag.label}</p>
               </article>
-            ))}
+              );
+            })}
           </div>
           {aiSearchScholarships.length === 0 && <p className="loading-note">No scholarships matched your AI search query.</p>}
         </section>
@@ -2584,23 +2856,19 @@ function App() {
             <h3>{t.homeCards.deadlines}</h3>
             <div className="deadline-list">
               {deadlineData.map((item) => {
-                const statusText =
-                  item.status === "open"
-                    ? t.homeCards.open
-                    : item.status === "closing"
-                      ? t.homeCards.closing
-                      : "Closed";
+                const deadlineIntel = getDeadlineIntel(item.deadline);
+                const statusText = deadlineIntel.label;
 
                 return (
-                  <div className={`deadline-item ${item.status}`} key={item.scholarship}>
+                  <div className={`deadline-item ${deadlineIntel.tone}`} key={item.scholarship}>
                     <div>
                       <strong>{item.scholarship}</strong>
                       <p>{item.deadline}</p>
-                      {item.status !== "closed" && (
-                        <p className="deadline-count">{getDaysLeft(item.deadline)} days left</p>
+                      {deadlineIntel.daysLeft !== null && (
+                        <p className={`deadline-count ${deadlineIntel.tone}`}>{deadlineIntel.daysLeft} days left</p>
                       )}
                     </div>
-                    <span className={`status-pill ${item.status}`}>{statusText}</span>
+                    <span className={`status-pill ${deadlineIntel.tone}`}>{statusText}</span>
                   </div>
                 );
               })}
@@ -2679,9 +2947,23 @@ function App() {
     );
   };
 
-  const renderEligibility = () => (
-    <section className="moon-section">
-      <div className="glass form-shell">
+  const renderEligibility = () => {
+    const recommendationSet = getRecommendedScholarships();
+    const topRecommendation = recommendationSet[0]?.scholarship || fallbackScholarships[0];
+    const currentProfileForSuccess = {
+      marks: Number.parseFloat(String(eligibilityForm.percentage || authUser?.percentage || "0")),
+      income: Number.parseFloat(String(
+        eligibilityForm.income || studentProfileForm.familyIncome || authUser?.familyIncome || "0"
+      )),
+      category: studentProfileForm.category || eligibilityForm.category || "General",
+      deadlineDaysLeft: getDaysLeft(topRecommendation?.deadline),
+    };
+    const successProbabilityInsight = getSuccessProbabilityInsight(topRecommendation);
+    const whatIfSimulations = generateWhatIfSimulations(currentProfileForSuccess, topRecommendation);
+
+    return (
+      <section className="moon-section">
+        <div className="glass form-shell">
         <h2>{t.eligibility.title}</h2>
         <p>{t.eligibility.subtitle}</p>
 
@@ -2756,19 +3038,95 @@ function App() {
         {eligibilityResult !== null && (
           <div className={`result-box ${eligibilityResult ? "ok" : "warn"}`}>
             <h4>{t.eligibility.scoreLabel}: {eligibilityScore}%</h4>
+            <span className={`insight-badge ${eligibilityResult ? "good" : "review"}`}>
+              {eligibilityResult ? "Eligible" : "Needs Improvement"}
+            </span>
             <p>
               {eligibilityResult
                 ? t.eligibility.eligibleText
                 : t.eligibility.notEligibleText}
             </p>
+
+            <div className="success-probability-panel">
+              <h4>Scholarship Success Probability</h4>
+              <p><strong>Success Probability:</strong> {successProbabilityInsight.probability}%</p>
+              {topRecommendation?.name && <p><strong>Scholarship:</strong> {topRecommendation.name}</p>}
+              <div>
+                <strong>Reason:</strong>
+                <ul>
+                  {successProbabilityInsight.explanation.map((reason) => (
+                    <li key={`success-${reason}`}>{reason}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="what-if-panel">
+              <h4>What If Analysis</h4>
+              <div className="what-if-list">
+                {whatIfSimulations.map((simulation) => (
+                  <p key={simulation.label}>
+                    {simulation.label} → Success Probability: <strong>{simulation.probability}%</strong>
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            <div className="eligibility-reasoning-panel">
+              <h4>Eligibility Reasoning Panel</h4>
+              <p>Explanation using your current profile and scholarship rules.</p>
+              <div className="eligibility-reasoning-list">
+                {getRecommendedScholarships().slice(0, 3).map(({ scholarship, match }) => (
+                  <article className="eligibility-reasoning-item" key={`reasoning-${scholarship.id}`}>
+                    <div className="eligibility-reasoning-head">
+                      <strong>Scholarship: {scholarship.name}</strong>
+                      <span className={`status-pill ${match.isEligible ? "safe" : "today"}`}>
+                        Status: {match.isEligible ? "Eligible" : "Not Eligible"}
+                      </span>
+                    </div>
+                    <ul>
+                      {match.reasons.slice(0, 4).map((reason) => (
+                        <li key={`${scholarship.id}-${reason}`}>{reason}</li>
+                      ))}
+                    </ul>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="ml-eligibility-panel">
+              <h4>ML Eligibility Prediction</h4>
+              <p className="ml-eligibility-caption">Hybrid rule-based + ML eligibility prediction system.</p>
+
+              {isMlEligibilityLoading && <p className="ml-eligibility-loading">Running ML model...</p>}
+
+              {!isMlEligibilityLoading && mlEligibilityPrediction && (
+                <>
+                  <p className="ml-probability">
+                    Eligibility Probability: {mlEligibilityPrediction.probability ?? "--"}%
+                  </p>
+                  <div className="ml-reasons">
+                    <strong>Reasons:</strong>
+                    <ul>
+                      {mlEligibilityPrediction.explanation.map((reason) => (
+                        <li key={`ml-reason-${reason}`}>✔ {reason}</li>
+                      ))}
+                      {!uploads.income && <li>❌ Missing income certificate</li>}
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
+
             {eligibilityResult && (
               <button className="btn-glass" onClick={() => openApplyPage(selectedApplyScholarship)}>{t.eligibility.applyNow}</button>
             )}
           </div>
         )}
-      </div>
-    </section>
-  );
+        </div>
+      </section>
+    );
+  };
 
   const renderApply = () => (
     <section className="moon-section">
@@ -3298,6 +3656,20 @@ function App() {
   const renderScholarshipDetails = () => {
     const sourceScholarships = scholarshipCatalog.length > 0 ? scholarshipCatalog : fallbackScholarships;
     const selectedScholarship = sourceScholarships.find((item) => item.id === selectedScholarshipId);
+    const successPrediction = selectedScholarship
+      ? calculateSuccessProbability(
+        {
+          marks: eligibilityForm.percentage || authUser?.percentage || 0,
+          income: eligibilityForm.income || studentProfileForm.familyIncome || authUser?.familyIncome || 0,
+          category: studentProfileForm.category || eligibilityForm.category || "General",
+          deadlineDaysLeft: getDaysLeft(selectedScholarship.deadline),
+        },
+        selectedScholarship
+      )
+      : null;
+    const riskIndicator = successPrediction
+      ? getRiskLevelFromProbability(successPrediction.probability)
+      : { level: "MEDIUM", tone: "soon" };
 
     return (
       <ScholarshipDetails
@@ -3306,6 +3678,8 @@ function App() {
         onCheckEligibility={checkScholarshipEligibility}
         eligibilityResult={eligibilityCheckResult}
         isChecking={isEligibilityChecking}
+        successPrediction={successPrediction}
+        riskIndicator={riskIndicator}
       />
     );
   };
@@ -3450,6 +3824,10 @@ function App() {
         </div>
       </div>
     </section>
+  );
+
+  const renderAdminAnalytics = () => (
+    <AdminAnalytics applicationHistory={applicationHistory} />
   );
 
   const renderAuth = () => (
@@ -3629,6 +4007,22 @@ function App() {
     }, {});
     const applicationStatuses = Object.entries(statusCounts);
     const dashboardScore = eligibilityScore > 0 ? eligibilityScore : personalizedEligibilityScore;
+    const profileStrength = calculateProfileStrength({
+      marks: eligibilityForm.percentage || authUser?.percentage || 0,
+      uploads,
+      income: eligibilityForm.income || studentProfileForm.familyIncome || authUser?.familyIncome || 0,
+      category: studentProfileForm.category || eligibilityForm.category || "General",
+    });
+    const smartInsights = generateSmartInsights({
+      scholarships: sourceScholarships,
+      profile: {
+        marks: eligibilityForm.percentage || authUser?.percentage || 0,
+        income: eligibilityForm.income || studentProfileForm.familyIncome || authUser?.familyIncome || 0,
+        category: studentProfileForm.category || eligibilityForm.category || "General",
+      },
+      getScholarshipState,
+      getDaysLeft,
+    });
 
     return (
       <section className="moon-section">
@@ -3638,9 +4032,25 @@ function App() {
             <p className="dashboard-subtitle">AI-personalized scholarship insights based on your profile.</p>
           </div>
 
+          <article className="dashboard-profile-strength">
+            <h3>Profile Strength: {profileStrength.score}% ({profileStrength.label})</h3>
+            <div className="profile-strength-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={profileStrength.score}>
+              <span className="profile-strength-fill" style={{ width: `${profileStrength.score}%` }} />
+            </div>
+          </article>
+
           <article className="dashboard-ai-insight">
             <h3>🤖 AI Insight</h3>
             <p>Students with similar academic profiles received scholarships between ₹50,000 – ₹1,00,000.</p>
+          </article>
+
+          <article className="dashboard-smart-insights">
+            <h3>Smart Insights</h3>
+            <ul>
+              {smartInsights.map((insight) => (
+                <li key={insight}>• {insight}</li>
+              ))}
+            </ul>
           </article>
 
           <div className="dashboard-panel-grid">
@@ -3966,6 +4376,7 @@ function App() {
                     <button type="button" className={activePage === "notifications" ? "active" : ""} onClick={() => handleMoreNavigation("notifications")}>Notifications</button>
                     <button type="button" className={activePage === "support" ? "active" : ""} onClick={() => handleMoreNavigation("support")}>Support</button>
                     <button type="button" className={activePage === "admin" ? "active" : ""} onClick={() => handleMoreNavigation("admin")}>Admin</button>
+                    <button type="button" className={activePage === "analytics" ? "active" : ""} onClick={() => handleMoreNavigation("analytics")}>Analytics</button>
                     <button type="button" className={activePage === "portals" ? "active" : ""} onClick={() => handleMoreNavigation("portals")}>Portals</button>
                     <button type="button" className={activePage === "contact" ? "active" : ""} onClick={() => handleMoreNavigation("contact")}>Contact</button>
                   </div>
@@ -4030,6 +4441,7 @@ function App() {
       {activePage === "notifications" && renderNotifications()}
       {activePage === "support" && renderSupport()}
       {activePage === "admin" && renderAdminTickets()}
+      {activePage === "analytics" && renderAdminAnalytics()}
       {activePage === "aiassistant" && renderAiAssistant()}
       {activePage === "stories" && renderSuccessStories()}
       {activePage === "portals" && renderPortals()}

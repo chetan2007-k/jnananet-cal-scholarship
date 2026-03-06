@@ -1,6 +1,14 @@
 import { useMemo, useState } from "react";
 
-function ScholarshipDetails({ scholarship, onBack, onCheckEligibility, eligibilityResult, isChecking }) {
+function ScholarshipDetails({
+  scholarship,
+  onBack,
+  onCheckEligibility,
+  eligibilityResult,
+  isChecking,
+  successPrediction,
+  riskIndicator,
+}) {
   const [marks, setMarks] = useState("");
   const [income, setIncome] = useState("");
 
@@ -75,6 +83,14 @@ function ScholarshipDetails({ scholarship, onBack, onCheckEligibility, eligibili
           <article className="scholarship-detail-card">
             <h3>Eligibility Checker</h3>
             <p>Enter your academic marks and family income to check if you qualify.</p>
+
+            {successPrediction && (
+              <div className="risk-indicator-box">
+                <h4>Application Risk Indicator</h4>
+                <p><strong>Risk Level:</strong> <span className={`status-pill ${riskIndicator?.tone || "soon"}`}>{riskIndicator?.level || "MEDIUM"}</span></p>
+                <p><strong>Success Probability:</strong> {successPrediction.probability}%</p>
+              </div>
+            )}
 
             <form className="detail-eligibility-form" onSubmit={submitEligibilityCheck}>
               <label>

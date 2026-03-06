@@ -1,4 +1,4 @@
-# JnanaNet – AI Powered Scholarship Discovery Platform for Bharat
+# JnanaNet – AI Powered Scholarship Intelligence Platform
 
 🏆 AI for Bharat Hackathon 2026 Submission
 
@@ -8,65 +8,63 @@
 ![AWS](https://img.shields.io/badge/cloud-AWS-orange)
 
 ## Overview
-JnanaNet helps students in India discover scholarships, financial aid, and government schemes through an AI-assisted experience. It provides curated scholarship options, eligibility checks, guidance responses, and redirection to trusted official scholarship portals.
+JnanaNet is an AI-powered scholarship intelligence and decision-support platform that predicts eligibility, estimates success probability, and guides students through the application process using multilingual AI assistance.
+
+The platform is designed for real-world student workflows: profile submission, eligibility interpretation, explainable scoring, comparative decision analysis, and guided next actions.
 
 ## Project Links
 - Frontend: http://jnananet-frontend-chetan.s3-website.eu-north-1.amazonaws.com/
 - Repository: https://github.com/chetan2007-k/jnananet-cal-scholarship
 
-## Key Features
-- AI assistant for scholarship guidance (`/api/guidance`)
-- Scholarship list and details APIs (`/api/scholarships`, `/api/scholarships/:id`)
-- Eligibility checking based on marks and family income (`/api/check-eligibility`)
-- Scholarship recommendation endpoint (`/api/recommendations`)
-- Document upload flow integrated with Amazon S3 (`/api/upload`)
-- Multilingual-friendly frontend experience for student accessibility
+## Key Intelligence Features
+- **Eligibility Prediction Engine** — Evaluates candidate fit using profile and scholarship criteria.
+- **Success Probability Scoring** — Estimates application success likelihood with interpretable scoring signals.
+- **What-If Simulation** — Models profile adjustments (for example marks or income changes) to analyze potential outcomes.
+- **Smart Insight Generator** — Produces actionable guidance based on profile quality and scholarship fit.
+- **AI Verdict Recommendation** — Tags opportunities with recommendation confidence for faster decisions.
+- **Comparison Intelligence** — Compares shortlisted scholarships side-by-side for strategic selection.
+- **Profile Strength Meter** — Quantifies profile completeness and competitiveness.
+- **Risk Indicator** — Highlights potential rejection risk and sensitivity factors.
+- **Multilingual AI Assistant** — Supports guidance-oriented interaction for broader accessibility.
 
-## Architecture
-JnanaNet follows a simple cloud architecture for hackathon speed and production readiness:
+## System Highlights
+- **Real-world workflow coverage** from discovery to submission readiness.
+- **Decision-support design** focused on measurable, actionable outcomes.
+- **Explainable scoring** to improve user trust and reviewer transparency.
+- **Interactive analytics** for student and admin-level visibility.
 
-- **Frontend:** React + Vite static site hosted on Amazon S3
-- **Backend:** Node.js + Express API running on Amazon EC2
-- **AI Layer:** Scholarship query assistance via backend AI guidance service
-- **Storage/Upload:** Amazon S3 for document upload handling
-- **External Portals:** Redirection to official scholarship platforms (for example NSP, Buddy4Study, Vidya Lakshmi)
+## Tech Stack
+- **Frontend:** React + Vite
+- **Backend:** Node + Express
+- **AI:** Amazon Bedrock
+- **Storage:** AWS S3
 
-## High-Level Flow
-`Student → Frontend Website → Backend API → AI Assistant → Scholarship Suggestion → Official Portal`
+## Demo Flow
+`Profile → Eligibility → Probability → What-If → Compare → AI Chat`
 
-## Repository Structure
-
-```text
-jnananet-cal-scholarship/
-├── backend/
-│   ├── data/
-│   ├── routes/
-│   ├── services/
-│   └── server.js
-├── frontend/
-│   ├── public/
-│   └── src/
-├── design.md
-├── requirements.md
-└── usecase.md
-```
+## Architecture Snapshot
+- **Frontend:** React + Vite static site hosted on Amazon S3.
+- **Backend:** Node.js + Express APIs handling profile analysis, eligibility, recommendations, and guidance.
+- **AI Layer:** Bedrock-backed guidance service for conversational scholarship support.
+- **Storage/Upload:** Amazon S3 integrated upload flow.
 
 ## API Endpoints
 
 ### Health
-- `GET /api/health` — Backend health status
+- `GET /api/health` — Backend health status.
 
 ### Scholarships
-- `GET /api/scholarships` — List scholarships
-- `GET /api/scholarships/:id` — Scholarship by ID
+- `GET /api/scholarships` — List scholarships.
+- `GET /api/scholarships/:id` — Scholarship by ID.
 
-### Student Guidance
-- `POST /api/check-eligibility` — Evaluate eligibility from profile inputs
-- `POST /api/recommendations` — Return recommendation list
-- `POST /api/guidance` — Return AI guidance for scholarship queries
+### Intelligence + Guidance
+- `POST /api/check-eligibility` — Rule-based eligibility evaluation.
+- `POST /api/ml-eligibility` — ML-based eligibility probability and explanation.
+- `POST /api/recommendations` — Scholarship recommendations.
+- `POST /api/guidance` — AI guidance response.
 
 ### Uploads
-- `POST /api/upload` — Upload a document (accepted fields: `document`, `file`, `upload`)
+- `POST /api/upload` — Upload a document (accepted fields: `document`, `file`, `upload`).
 
 ## Local Development Setup
 
@@ -92,7 +90,7 @@ npm run dev
 ```
 
 ## Environment Variables (Backend)
-Create a `.env` file inside `backend/` with values similar to:
+Create a `.env` file inside `backend/`:
 
 ```env
 PORT=5000
@@ -101,24 +99,12 @@ MODEL_ID=<your_model_id>
 CORS_ORIGIN=http://localhost:5173,http://jnananet-frontend-chetan.s3-website.eu-north-1.amazonaws.com
 ```
 
-Add AWS credentials and S3 configuration as required by your deployment setup.
-
-## Deployment Summary
-- Frontend deployed on Amazon S3 static website hosting
-- Backend deployed on Amazon EC2
-- API CORS configured for S3 frontend domain and local development
+Add AWS credentials and S3 configuration according to your deployment environment.
 
 ## Documentation
 - [System Design](design.md)
 - [Requirements Specification](requirements.md)
 - [Use Cases](usecase.md)
-
-## Future Enhancements
-- Multilingual AI support across more Indian languages
-- Scholarship recommendation engine improvements
-- Student profile-based scholarship matching
-- Integration with government scholarship APIs
-- Optional managed scaling with API Gateway, Lambda, and DynamoDB
 
 ## License
 This project is licensed under the MIT License.

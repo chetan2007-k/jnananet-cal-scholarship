@@ -1,56 +1,43 @@
-# JnanaNet – AI Powered Scholarship Discovery Platform
+# JnanaNet – Use Case Specification
 
-## Project Links
-- Frontend: http://jnananet-frontend-chetan.s3-website.eu-north-1.amazonaws.com/
-- GitHub: https://github.com/chetan2007-k/jnananet-cal-scholarship
+## UC1 → Student finds scholarships
+- **Actor:** Student
+- **Precondition:** Student accesses the platform and provides basic profile context.
+- **Flow:** Student opens scholarship listings, applies profile-relevant discovery, and reviews available opportunities.
+- **Outcome:** Student receives a filtered scholarship set aligned with baseline profile criteria.
 
-## 1. Actors
-The key actors interacting with JnanaNet are:
+## UC2 → Student checks eligibility
+- **Actor:** Student
+- **Precondition:** Student has entered profile details required for eligibility evaluation.
+- **Flow:** Student triggers eligibility check; system evaluates rule-based and intelligence-assisted criteria.
+- **Outcome:** Student receives eligibility status with explanation-oriented reasoning.
 
-1. **Student**
-   - Primary end user who searches scholarships and asks questions.
+## UC3 → Student analyzes success probability
+- **Actor:** Student
+- **Precondition:** Eligibility and profile data are available for scoring.
+- **Flow:** Student requests probability analysis; system computes success likelihood and profile-strength signals.
+- **Outcome:** Student gets probability-informed insight to prioritize applications.
 
-2. **Scholarship Platforms**
-   - External official or trusted portals (for example, NSP, Buddy4Study, Vidya Lakshmi) that provide scholarship listings and applications.
+## UC4 → Student uses what-if simulation
+- **Actor:** Student
+- **Precondition:** Baseline score/probability result exists for the current profile.
+- **Flow:** Student adjusts profile assumptions (for example marks or income); simulator recomputes projected outcomes.
+- **Outcome:** Student understands which profile improvements can increase success potential.
 
-3. **AI Assistant**
-   - Intelligent helper that answers scholarship-related queries and suggests relevant portal pathways.
+## UC5 → Student compares scholarships
+- **Actor:** Student
+- **Precondition:** Student has shortlisted at least two scholarships.
+- **Flow:** Student opens comparison intelligence view; system presents side-by-side differences in fit, probability, and risk signals.
+- **Outcome:** Student identifies the most strategic scholarship targets.
 
-4. **System Administrator**
-   - Maintains platform content, verifies links, and updates scholarship resources.
+## UC6 → Student asks AI assistant
+- **Actor:** Student
+- **Precondition:** AI guidance service is reachable from the platform.
+- **Flow:** Student asks scholarship guidance questions; multilingual AI returns contextual recommendations and next-step advice.
+- **Outcome:** Student gains actionable clarity on eligibility, documentation, and application direction.
 
-## 2. Use Case List
-The system supports the following use cases:
-
-1. Student visits the website.
-2. Student searches for scholarships.
-3. Student asks the AI assistant for help.
-4. System suggests scholarship portals.
-5. Student is redirected to official scholarship websites.
-6. Student reads FAQ information.
-7. Admin updates scholarship information.
-
-## 3. Use Case Flow
-The primary end-to-end user interaction flow is:
-
-**Student → Website → AI Assistant → Scholarship Recommendation → Redirect to Official Portal**
-
-### Step-by-Step Flow
-1. The student opens the JnanaNet website.
-2. The student browses scholarship options or asks a question.
-3. The AI assistant interprets the query and returns helpful guidance.
-4. The system recommends suitable scholarship portals.
-5. The student selects a recommendation and is redirected to the official website.
-6. The student continues application or verification steps on the trusted portal.
-
-## 4. Use Case Diagram Description
-Conceptually, the student is the central actor interacting with the JnanaNet platform. The student can browse information directly or seek help from the AI assistant. The JnanaNet system then acts as an intermediary that maps user intent to relevant scholarship resources and connects the student to external scholarship platforms for official details and application workflows. The system administrator supports this process by keeping portal references and scholarship guidance up to date.
-
-## 5. Benefits of the Use Cases
-These use cases simplify scholarship discovery for students across India by:
-
-- Reducing time spent searching across multiple disconnected websites.
-- Providing guided support through an AI assistant for common scholarship questions.
-- Directing students to trusted official portals for accurate and secure information.
-- Improving accessibility and confidence for first-time scholarship applicants.
-- Creating a scalable support model that can expand to larger student populations.
+## UC7 → Student tracks applications
+- **Actor:** Student
+- **Precondition:** Student has active or planned scholarship applications.
+- **Flow:** Student reviews progress-related indicators, reminders, and status-oriented cues.
+- **Outcome:** Student maintains structured follow-through and reduces missed deadlines.

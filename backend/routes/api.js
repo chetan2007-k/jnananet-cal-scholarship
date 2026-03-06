@@ -15,6 +15,7 @@ const {
   resetPasswordWithToken,
   syncAccountPassword,
 } = require("../services/passwordResetService");
+const { predictEligibility } = require("../services/mlEligibilityService");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -464,6 +465,29 @@ router.post("/check-eligibility", (req, res) => {
     income,
     results,
   });
+});
+
+router.post("/ml-eligibility", async (req, res, next) => {
+  try {
+    const marks = Number.parseFloat(req.body?.marks || "0");
+    const income = Number.parseFloat(req.body?.income || "0");
+
+    if (Number.isNaN(marks) || Number.isNaN(income)) {
+      return res.status(400).json({ message: "marks and income are required" });
+    }
+
+    const result = await predictEligibility({
+      marks,
+      income,
+      caste: req.body?.caste || req.body?.category || "General",
+      state: req.body?.state || "",
+      course: req.body?.course || "Engineering",
+    });
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
 });
 
 router.post("/guidance", async (req, res) => {

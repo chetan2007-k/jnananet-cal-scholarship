@@ -616,6 +616,20 @@ select {
   margin-bottom: 6px;
 }
 
+.scholarship-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.scholarship-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
 .scholarship-card p {
   color: var(--text-muted);
   margin-bottom: 14px;
@@ -645,6 +659,34 @@ select {
   margin: 0;
   color: var(--text-muted);
   font-size: 13px;
+}
+
+.deadline-inline-chip {
+  margin-left: 8px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.deadline-inline-chip.safe {
+  color: #bbf7d0;
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.deadline-inline-chip.soon {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.22);
+}
+
+.deadline-inline-chip.today {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.deadline-inline-chip.closed {
+  color: #e5e7eb;
+  background: rgba(100, 116, 139, 0.25);
 }
 
 .apply-mini {
@@ -688,6 +730,64 @@ select {
   margin-top: 10px;
   font-weight: 700;
   color: #a5f3fc;
+}
+
+.score-breakdown-panel {
+  margin-top: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.score-breakdown-panel h4 {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #dbeafe;
+}
+
+.score-breakdown-list {
+  display: grid;
+  gap: 8px;
+}
+
+.score-breakdown-row {
+  display: grid;
+  gap: 4px;
+}
+
+.score-breakdown-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.score-breakdown-head strong {
+  color: #c7d2fe;
+}
+
+.score-breakdown-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.24);
+  overflow: hidden;
+}
+
+.score-breakdown-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.score-breakdown-fill.core {
+  background: linear-gradient(90deg, #22d3ee, #38bdf8);
+}
+
+.score-breakdown-fill.advisory {
+  background: linear-gradient(90deg, #a78bfa, #818cf8);
 }
 
 .match-reasons {
@@ -880,8 +980,20 @@ select {
   border-left-color: #22c55e;
 }
 
+.deadline-item.safe {
+  border-left-color: #22c55e;
+}
+
 .deadline-item.closing {
   border-left-color: #fb923c;
+}
+
+.deadline-item.soon {
+  border-left-color: #f59e0b;
+}
+
+.deadline-item.today {
+  border-left-color: #ef4444;
 }
 
 .deadline-item.closed {
@@ -901,9 +1013,24 @@ select {
   background: rgba(34, 197, 94, 0.2);
 }
 
+.status-pill.safe {
+  color: #bbf7d0;
+  background: rgba(34, 197, 94, 0.2);
+}
+
 .status-pill.closing {
   color: #fed7aa;
   background: rgba(251, 146, 60, 0.2);
+}
+
+.status-pill.soon {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.24);
+}
+
+.status-pill.today {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .status-pill.closed {
@@ -1090,6 +1217,24 @@ select {
   background: rgba(34, 211, 238, 0.16);
 }
 
+.comparison-intelligence {
+  margin-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.24);
+  padding-top: 10px;
+  text-align: left;
+}
+
+.comparison-intelligence h4 {
+  margin-bottom: 6px;
+}
+
+.comparison-intelligence ul {
+  margin-left: 16px;
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
+}
+
 .btn-neon,
 .btn-glass {
   border: none;
@@ -1198,6 +1343,199 @@ select {
   margin-top: 14px;
   border-radius: 12px;
   padding: 12px;
+}
+
+.success-probability-panel {
+  margin-top: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.32);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(8, 47, 73, 0.35);
+  text-align: left;
+}
+
+.success-probability-panel ul {
+  margin-left: 16px;
+  margin-top: 4px;
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
+}
+
+.what-if-panel {
+  margin-top: 12px;
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(30, 41, 59, 0.4);
+  text-align: left;
+}
+
+.what-if-list {
+  display: grid;
+  gap: 6px;
+}
+
+.what-if-list p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.ai-verdict-tag {
+  margin-top: 10px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  display: inline-flex;
+}
+
+.ai-verdict-tag.safe {
+  color: #bbf7d0;
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+.ai-verdict-tag.soon {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.ai-verdict-tag.today {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.insight-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+}
+
+.insight-badge.high {
+  color: #bbf7d0;
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.insight-badge.good {
+  color: #cffafe;
+  background: rgba(34, 211, 238, 0.2);
+  border-color: rgba(34, 211, 238, 0.5);
+}
+
+.insight-badge.review {
+  color: #fbcfe8;
+  background: rgba(244, 114, 182, 0.2);
+  border-color: rgba(244, 114, 182, 0.45);
+}
+
+.insight-badge.safe {
+  color: #bbf7d0;
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+.insight-badge.soon {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.insight-badge.today,
+.insight-badge.closed {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.eligibility-reasoning-panel {
+  margin-top: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.38);
+  text-align: left;
+}
+
+.eligibility-reasoning-panel > p {
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.eligibility-reasoning-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.eligibility-reasoning-item {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.36);
+}
+
+.eligibility-reasoning-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.eligibility-reasoning-item ul {
+  margin-left: 16px;
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.ml-eligibility-panel {
+  margin-top: 12px;
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(30, 41, 59, 0.42);
+  text-align: left;
+}
+
+.ml-eligibility-caption {
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.ml-eligibility-loading {
+  margin-top: 8px;
+  color: #93c5fd;
+  font-weight: 700;
+}
+
+.ml-probability {
+  margin-top: 8px;
+  color: #c4b5fd;
+  font-weight: 700;
+}
+
+.ml-reasons {
+  margin-top: 8px;
+}
+
+.ml-reasons ul {
+  margin-left: 16px;
+  margin-top: 4px;
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
 }
 
 .result-box.ok {
@@ -1833,6 +2171,18 @@ select {
   font-size: 13px;
 }
 
+.risk-indicator-box {
+  margin: 10px 0;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.risk-indicator-box h4 {
+  margin-bottom: 6px;
+}
+
 .assistant-support-row {
   margin-top: 10px;
 }
@@ -2214,6 +2564,34 @@ select {
   box-shadow: 0 14px 30px rgba(2, 6, 23, 0.3);
 }
 
+.analytics-shell {
+  max-width: 1200px;
+}
+
+.analytics-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.analytics-card {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.analytics-card-wide {
+  grid-column: 1 / -1;
+}
+
+.analytics-chart {
+  width: 100%;
+  height: 280px;
+  margin-top: 8px;
+}
+
 .support-ticket-form {
   margin-top: 8px;
   border: 1px solid rgba(148, 163, 184, 0.22);
@@ -2348,6 +2726,30 @@ select {
   margin-bottom: 0;
 }
 
+.dashboard-profile-strength {
+  margin-top: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.26);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.profile-strength-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.22);
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.profile-strength-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22d3ee, #818cf8);
+}
+
 .dashboard-ai-insight {
   border: 1px solid rgba(56, 189, 248, 0.25);
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(129, 140, 248, 0.12));
@@ -2363,6 +2765,31 @@ select {
 
 .dashboard-ai-insight p {
   margin: 0;
+  color: #dbeafe;
+}
+
+.dashboard-smart-insights {
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(56, 189, 248, 0.1));
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.dashboard-smart-insights h3 {
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+.dashboard-smart-insights ul {
+  margin-left: 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-smart-insights li {
   color: #dbeafe;
 }
 
@@ -2827,6 +3254,58 @@ select {
 .app-shell.light .search-item,
 .app-shell.light .track-result {
   background: rgba(255, 255, 255, 0.86);
+}
+
+.app-shell.light .score-breakdown-panel,
+.app-shell.light .eligibility-reasoning-panel,
+.app-shell.light .eligibility-reasoning-item {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(15, 23, 42, 0.15);
+}
+
+.app-shell.light .success-probability-panel,
+.app-shell.light .comparison-intelligence,
+.app-shell.light .dashboard-profile-strength,
+.app-shell.light .risk-indicator-box,
+.app-shell.light .analytics-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.16);
+}
+
+.app-shell.light .what-if-panel,
+.app-shell.light .dashboard-smart-insights {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.app-shell.light .ml-eligibility-panel {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.app-shell.light .score-breakdown-head,
+.app-shell.light .eligibility-reasoning-panel > p,
+.app-shell.light .eligibility-reasoning-item ul {
+  color: #334155;
+}
+
+.app-shell.light .success-probability-panel ul,
+.app-shell.light .comparison-intelligence ul {
+  color: #334155;
+}
+
+.app-shell.light .what-if-list p,
+.app-shell.light .dashboard-smart-insights li {
+  color: #334155;
+}
+
+.app-shell.light .ml-eligibility-caption,
+.app-shell.light .ml-reasons ul {
+  color: #334155;
+}
+
+.app-shell.light .ml-probability {
+  color: #4338ca;
 }
 
 .app-shell.light .portal-link {

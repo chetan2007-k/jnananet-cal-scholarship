@@ -1,77 +1,47 @@
-# JnanaNet – AI Powered Scholarship Discovery Platform
-
-## Introduction
-JnanaNet is built to help students discover scholarships, financial assistance, and education support opportunities with less effort and better clarity. The system provides a single, easy-to-use platform where users can explore trusted scholarship portals, ask scholarship-related questions, and get guided toward official application websites.
-
-### Project Links
-- Frontend: http://jnananet-frontend-chetan.s3-website.eu-north-1.amazonaws.com/
-- Repository: https://github.com/chetan2007-k/jnananet-cal-scholarship
+# JnanaNet – Requirements Specification
 
 ## Functional Requirements
-The system should provide the following functional capabilities:
 
-1. **Explore Scholarship Portals**
-   - Users can view a curated list of scholarship and financial aid portals.
+### FR1: User profile input
+The platform shall capture structured student profile inputs such as academic score, family income, state, category, gender, and current study level to support downstream intelligence modules.
 
-2. **AI Assistant Support**
-   - Users can ask scholarship-related questions.
-   - The AI assistant returns helpful guidance and relevant portal suggestions.
+### FR2: Eligibility detection
+The system shall evaluate scholarship eligibility using rule-based checks and provide interpretable acceptance or rejection rationale.
 
-3. **Official Portal Redirection**
-   - The system redirects users to official scholarship websites for application and details.
+### FR3: Success probability calculation
+The system shall compute scholarship success probability scores based on profile quality and scholarship-fit factors.
 
-4. **FAQ Access**
-   - Users can read common scholarship questions and answers in a structured FAQ section.
+### FR4: What-If simulation
+The platform shall allow simulated profile adjustments to estimate how changes in key attributes influence success probability.
 
-5. **Budget and Financial Planning Information**
-   - Users can access basic guidance related to education budgeting and financial planning.
+### FR5: Recommendation engine
+The system shall generate ranked scholarship recommendations aligned with user profile constraints and opportunities.
 
-6. **Mobile-Friendly Experience**
-   - The interface should be responsive and usable on phones, tablets, and desktops.
+### FR6: Scholarship comparison
+The platform shall support side-by-side comparison of shortlisted scholarships for informed decision-making.
 
-## Non Functional Requirements
-The platform should satisfy the following quality attributes:
+### FR7: AI chat guidance
+The system shall provide multilingual AI-guided scholarship support through conversational interactions.
 
-1. **Fast Website Loading**
-   - Static frontend pages should load quickly under typical network conditions.
+### FR8: Tracking + reminders
+The platform shall support application progress visibility and time-sensitive reminder cues for scholarship deadlines.
 
-2. **Low Cost Cloud Deployment**
-   - Infrastructure should remain affordable and suitable for hackathon/startup deployment.
+### FR9: Ticket/contact system
+The system shall provide a support path for user queries through contact/ticket-oriented assistance channels.
 
-3. **High Availability**
-   - Core services should remain available with minimal downtime.
+## Non-Functional Requirements
 
-4. **Simple User Interface**
-   - Design should be intuitive for students with varied technical backgrounds.
+### Performance → fast response
+The platform should return scholarship search, scoring, and guidance responses with low latency suitable for interactive use.
 
-5. **Scalability**
-   - The architecture should support growth to a large number of concurrent users.
+### Scalability → modular backend
+The backend should remain modular to support incremental growth in users, scholarships, and intelligence services without architectural disruption.
 
-## System Requirements
-The system depends on the following technologies and runtime requirements:
+### Usability → multilingual UX
+The user experience should remain clear, accessible, and multilingual-ready for diverse student populations.
 
-1. **Client Environment**
-   - Modern web browser (Chrome, Edge, Firefox, Safari)
-   - Stable internet connection
+### Security → auth + validation
+The platform should enforce request validation, controlled access patterns, and secure handling of user-provided data and uploads.
 
-2. **Backend Runtime**
-   - Node.js backend server for API logic and AI integration orchestration
-
-3. **Hosting and Cloud**
-   - AWS S3 for frontend static website hosting
-   - AWS EC2 for backend service hosting
-
-## Future Enhancements
-The following improvements are planned for future versions:
-
-1. **Multilingual AI Support**
-   - Support for major Indian languages to improve accessibility.
-
-2. **Scholarship Recommendation Engine**
-   - Smarter recommendations based on eligibility patterns and user intent.
-
-3. **Profile-Based Scholarship Matching**
-   - Personalized scholarship matching using student profile information.
-
-4. **Government Scholarship API Integrations**
-   - Direct integration with relevant government scholarship data sources/APIs.
+### Reliability → stable APIs
+Core APIs should remain stable and predictable, with graceful fallback behavior for non-critical AI failure scenarios.
